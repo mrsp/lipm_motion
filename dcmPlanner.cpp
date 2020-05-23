@@ -1,6 +1,6 @@
 #include "dcmPlanner.h"
 
-dcmPlanner::dcmPlanner(RobotParameters &robot_):robot(robot_), dObsDCMx(robot_), dObsDCMy(robot)
+dcmPlanner::dcmPlanner(RobotParameters &robot_):robot(robot_), dObsDCMx(robot_), dObsDCMy(robot),  CoMBuffer(10 * (int)robot.getWalkParameter(PreviewWindow)), DCMBuffer(10 * (int)robot.getWalkParameter(PreviewWindow)), VRPBuffer(10 * (int)robot.getWalkParameter(PreviewWindow))
 {
     
 
@@ -170,8 +170,10 @@ dcmPlanner::dcmPlanner(RobotParameters &robot_):robot(robot_), dObsDCMx(robot_),
     u_x = 0;
     u_y = 0;
 
-
-
+    CoM_d.resize(9);
+    DCM_d.resize(6);
+    VRP_d.resize(3);
+    planAvailable = false;
     cout<<"DCM Planner Initialized"<<endl;
 
 }
@@ -187,8 +189,16 @@ void dcmPlanner::setState(Vector2f DCM, Vector2f CoM, Vector2f VRP)
 
 
 
-void dcmPlanner::Control(boost::circular_buffer<KVecFloat3> & VRPRef, Vector2f DCM, Vector2f CoM,  Vector2f VRP)
+void dcmPlanner::plan(boost::circular_buffer<VectorXd> & VRPRef, Vector2f DCM, Vector2f CoM,  Vector2f VRP)
 {
+
+     if(planAvailable)
+     {   
+         emptyPlan();
+         planAvailable = false;
+     }
+  while(VRPRef.size()>0)
+  {
 
     for (unsigned int i = 0; i < Np; i++)
     {
@@ -238,9 +248,6 @@ void dcmPlanner::Control(boost::circular_buffer<KVecFloat3> & VRPRef, Vector2f D
     x =  dObsDCMx.getState();
     y =  dObsDCMy.getState();
     
-    cout<<"State X "<<x<<endl;
-    cout<<"State Y "<<y<<endl;
-
 	//Desired Gait Pattern Reference
 	comx_d = x(0);
 	comy_d = y(0);
@@ -257,4 +264,51 @@ void dcmPlanner::Control(boost::circular_buffer<KVecFloat3> & VRPRef, Vector2f D
 	comdy_d = -robot.getWalkParameter(omega)*(comy_d-dcmy_d);
 	comddx_d = robot.getWalkParameter(omega)*robot.getWalkParameter(omega)*(comx_d - vrpx_d);
 	comddy_d = robot.getWalkParameter(omega)*robot.getWalkParameter(omega)*(comy_d - vrpy_d);
+
+
+    CoM_d(0) = comx_d;
+    CoM_d(1) = comy_d;
+    CoM_d(2) = robot.getWalkParameter(ComZ);
+    
+    CoM_d(3) = comdx_d;
+    CoM_d(4) = comdy_d;
+    CoM_d(5) = 0.0;
+
+    CoM_d(6) = comddx_d;
+    CoM_d(7) = comddy_d;
+    CoM_d(8) = 0.0;
+
+    DCM_d(0) = dcmx_d;
+    DCM_d(1) = dcmy_d;
+    DCM_d(2) = CoM_d(2);
+
+    DCM_d(3) = dcmdx_d;
+    DCM_d(4) = dcmdy_d;
+    DCM_d(5) = 0.0;
+
+
+    VRP_d(0) = vrpx_d;
+    VRP_d(1) = vrpy_d;
+    VRP_d(2) = 0.0;
+
+    CoMBuffer.push_back(CoM_d);
+    DCMBuffer.push_back(DCM_d);
+    VRPBuffer.push_back(VRP_d);
+
+    VRPRef.pop_front();
+
+  }
+    planAvailable = true;
+}
+
+void dcmPlanner::emptyPlan()
+{
+     while (CoMBuffer.size() > 0)
+        CoMBuffer.pop_front();
+    
+     while (DCMBuffer.size() > 0)
+        DCMBuffer.pop_front();
+    
+     while (VRPBuffer.size() > 0)
+        VRPBuffer.pop_front();
 }

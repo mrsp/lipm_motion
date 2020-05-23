@@ -1,23 +1,34 @@
 #include "RobotParameters.h"
-#include "KMat.hpp"
 #include "zmpPlanner.h"
 #include "dcmPlanner.h"
 #include "postureStabilizer.h"
 #include <iostream>
-#define DEF_STEP_ID -1
+
 int main()
 {
+
+
+    /** Compute Reference Points: x-y-z-roll-pitch-yaw **/
+    VectorXd planL;
+    planL.resize(6);
+    planL.setZero();
+    planL(1) = 0.05;
+    VectorXd planR;
+    planR.resize(6);
+    planR.setZero();
+    planR(1) = -0.05;
+
+
+
     RobotParameters robot;
     zmpPlanner tp(robot);
-    tp.firstrun = false;
-    /** Compute Reference Points in the x-y plane with orientation about the vertical axis z **/
-    KVecFloat3 planL = KVecFloat3(0, 0.045, 0);
-    KVecFloat3 planR = KVecFloat3(0, -0.045, 0);
-    /** Trajectory Planner **/
+    dcmPlanner dp(robot);
     tp.setFeet(planL, planR);
-
-    if (tp.planAvailable)
-        tp.emptyPlan();
+    Vector2f DCM, CoM, VRP;
+    DCM.setZero();
+    CoM.setZero();
+    VRP.setZero();
+    dp.setState(DCM,  CoM,  VRP);
 
     while (tp.stepAnkleQ.size() < 3)
     {
@@ -25,33 +36,35 @@ int main()
             /** Initial Walking Instruction **/
             WalkInstruction i;
             i.target = planL;
+            i.targetSupport = SUPPORT_LEG_RIGHT;
             /** ZMP in the Middle of Convex Hull **/
             i.targetZMP = SUPPORT_LEG_RIGHT;
             /** Number of Discrete Time steps of the Initial Walking Instruction **/
             i.steps = 100;
-            i.step_id = DEF_STEP_ID;
+            i.step_id = -1;
             /** Adding the Walking Instruction to the Walking Buffer for Execution **/
             tp.stepAnkleQ.push(i);
 
     }
-    tp.plan(KVecFloat2(0, 0), KVecFloat2(0,0), false);
- 
-
-    dcmPlanner dp(robot);
-    Vector2f DCM, CoM, VRP;
-    DCM.setZero();
-    CoM.setZero();
-    VRP.setZero();
-    dp.setState(DCM,  CoM,  VRP);
-
+    tp.plan();
+    dp.plan(tp.ZMPbuffer,  DCM,  CoM,   VRP);
     std::cout<<" "<<tp.ZMPbuffer.size()<<std::endl;
-    while(tp.ZMPbuffer.size()>0)
+    std::cout<<" "<<dp.VRPBuffer.size()<<std::endl;
+    std::cout<<" "<<dp.DCMBuffer.size()<<std::endl;
+    std::cout<<" "<<dp.CoMBuffer.size()<<std::endl;
+    std::cout<<" "<<tp.footLbuffer.size()<<std::endl;
+    std::cout<<" "<<tp.footRbuffer.size()<<std::endl;
+
+    VectorXf comX, comY;
+    comX.resize(dp.CoMBuffer.size());
+    comY.resize(dp.CoMBuffer.size());
+    int j=0;
+    while(dp.CoMBuffer.size()>0)
     {
-        std::cout<<" "<<tp.ZMPbuffer.front()(0)<<" "<<tp.ZMPbuffer.front()(1)<<std::endl;
-        dp.Control(tp.ZMPbuffer,  DCM,  CoM,   VRP);
-        tp.ZMPbuffer.pop_front();
+        comX(j) = dp.CoMBuffer[j](0);
+        comY(j) = dp.CoMBuffer[j](1);
+        dp.CoMBuffer.pop_front();
     }
-    postureStabilizer ps(robot);
 
     return 0;
 }

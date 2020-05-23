@@ -10,6 +10,7 @@
 #define _KWALKMAT_
 #include <math.h>
 #include <vector>
+#include "KMat.hpp"
 class KWalkMat
 {
 
@@ -255,27 +256,7 @@ public:
 
 
 
-    float Bezier(float p[],int end, int start, float t)
-    {
-        if(start==end)
-            return p[start];
-        else
-            return (1.0-t)*Bezier(p,end-1,start,t)+t*Bezier(p,end,start+1,t);
 
-    }
-
-    float BezierZ(float t, float Height, float steps)
-    {   
-        float p[] = {0.0,Height/3.0,2.225*Height,Height/3,0.0};
-        return Bezier(p,3,0,t/steps);
-    }
-
-    float BezierLinearInterpolation(float t,float end, float start, float Tss)
-    {
-        float p[]= {0, 0.01 , 0.99 , 1.0};
-        return  Bezier(p,3,0,t/Tss)*(end-start)+start;
-
-    }
 
     float QuadSplineInterpolation(float s,KMath::KMat::GenMatrix<float, 5, 1> alpha)
     {

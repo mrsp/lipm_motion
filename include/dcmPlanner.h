@@ -26,20 +26,23 @@ class dcmPlanner
         MatrixXf Fx, Fv, Fxu, Fvu, R, Qx, Qv, K_X, K_V,H , tmpb, H_inv, Ad, Ae, Cd, A, L;
         VectorXf K_v, VRPRefX, VRPRefY, Cksi,  Ce, Cx, Be, Bd, temp, K_x, B, C;
         
+        bool planAvailable;
         
-        
+        VectorXd DCM_d, CoM_d, VRP_d;
     public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
         float vrpx_d,comx_d,vrpy_, vrpx_,comdx_d,dcmx_d,dcmdx_d, vrpy_d,comy_d,comdy_d,dcmy_d,dcmdy_d,  comddx_d, comddy_d;
         bool firstrun;
+        boost::circular_buffer<VectorXd> DCMBuffer, CoMBuffer, VRPBuffer;
 
         dcmPlanner(RobotParameters &robot_);
         
         void setState(Vector2f DCM, Vector2f CoM, Vector2f ZMP);
         
-        void Control(boost::circular_buffer<KVecFloat3> & VRPRef, Vector2f DCM, Vector2f CoM, Vector2f ZMP);
+        void plan(boost::circular_buffer<VectorXd> & VRPRef, Vector2f DCM, Vector2f CoM, Vector2f ZMP);
         
         
+        void emptyPlan();
         
 };
 #endif

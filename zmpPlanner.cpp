@@ -1,363 +1,276 @@
 #include "zmpPlanner.h"
-zmpPlanner::zmpPlanner(RobotParameters &robot):NaoRobot(robot), ZMPbuffer(10*(int) NaoRobot.getWalkParameter(PreviewWindow)){//sa(robot){
+
+zmpPlanner::zmpPlanner(RobotParameters &robot_) : robot(robot_), ZMPbuffer(10 * (int)robot.getWalkParameter(PreviewWindow)), footRbuffer(10 * (int)robot.getWalkParameter(PreviewWindow)), footLbuffer(10 * (int)robot.getWalkParameter(PreviewWindow))
+{ //sa(robot){
     planAvailable = false;
-    start.zero();
-    target.zero();
-    startL.zero();
-    targetL.zero();
-    startR.zero();
-    targetR.zero();
-    plantarget.zero();
-    plantargetR.zero();
-    plantargetL.zero();
-    planstartL.zero();
-    planstartR.zero();
-    planned.targetZMP= SUPPORT_LEG_NONE;
-    planned.targetSupport= SUPPORT_LEG_NONE;
+    start.resize(3);
+    start.setZero();
+    target.resize(3);
+    target.setZero();
+    startL.resize(6);
+    startL.setZero();
+    targetL.resize(6);
+    targetL.setZero();
+    startR.resize(6);
+    startR.setZero();
+    targetR.resize(6);
+    targetR.setZero();
+
+    footR.resize(6);
+    footR.setZero();
+    footL.resize(6);
+    footL.setZero();
+    ZMPref.resize(3);
+    ZMPref.setZero();
+    planned.targetZMP = SUPPORT_LEG_NONE;
+    planned.targetSupport = SUPPORT_LEG_NONE;
     planned.step_id = -1;
-    zmpi = planned;
-    firstrun = true;
 }
 
-void zmpPlanner::setFeet(KVecFloat3 sl, KVecFloat3 sr){
-    startL=sl;
-    startR=sr;
+void zmpPlanner::setFeet(VectorXd sl, VectorXd sr)
+{
+    startL = sl;
+    startR = sr;
     /** Double Support Phase **/
-    KMath::KMat::GenMatrix<float,2,2> rot;
-    float meanangle=anglemean(sl(2),sr(2));
-    start=sl;
+    //KMath::KMat::GenMatrix<float, 2, 2> rot;
+    float meanangle = anglemean(startL(5), startR(5));
     /** planL,planR are the ankle positions, transforming them to Reference ZMP **/
-    KMath::KMat::transformations::makeRotation(rot,(float) meanangle);
-    KVecFloat2 rr = rot * KVecFloat2(-NaoRobot.getWalkParameter(HX),-NaoRobot.getWalkParameter(HY));
-    start(0) += rr(0);
-    start(1) += rr(1);
-    start+=sr;
-    rr = rot * KVecFloat2(-NaoRobot.getWalkParameter(HX),NaoRobot.getWalkParameter(HY));
-    start(0) += rr(0);
-    start(1) += rr(1);
-    start.scalar_mult(0.5);
-    start(2)=meanangle;
+    Rotation2D<double> rotR(startR(5));
+
+    Vector2d rr = rotR * Vector2d(-robot.getWalkParameter(HX), -robot.getWalkParameter(HY));
+    start(0) = rr(0) + startR(0);
+    start(1) = rr(1) + startR(1);
+
+    Rotation2D<double> rotL(startL(5));
+
+    rr = rotL * Vector2d(-robot.getWalkParameter(HX), robot.getWalkParameter(HY));
+    start(0) = rr(0) + startL(0);
+    start(1) = rr(1) + startL(1);
+    start *= 0.5;
+    start(2) = meanangle;
 }
 
-
-
-void zmpPlanner::generatePlan(KVecFloat2 DCM_, KVecFloat2 COP_, bool UseStepAdjustment){
-
-
-
-
-    if(stepAnkleQ.size()==0){
-        std::cout<<"Steps needed for motion planning"<<std::endl;
+void zmpPlanner::generatePlan()
+{
+    if (stepAnkleQ.size() == 0)
+    {
+        std::cout << "Steps needed for motion planning" << std::endl;
         return;
     }
+    bool add_DS_instruction = false;
 
-
-
-
-
-    unsigned int j = 0;
-    while (stepAnkleQ.size()>0){
-        
-        
+    while (stepAnkleQ.size() > 0)
+    {
         /** Robot is Ready to begin the walking Cycle **/
         WalkInstruction i = stepAnkleQ.front();
         /** Add a double support phase in the i instruction **/
-        if(planned.step_id != i.step_id)
+        if (!add_DS_instruction)
         {
-            i.steps = NaoRobot.getWalkParameter(DS_instructions);
+            std::cout << "Planning DS" << std::endl;
+            cout<<"STARTL STARTR "<<startL<<" "<<startR<<endl;
+
+            i.steps = robot.getWalkParameter(DS_instructions);
             i.phase = double_support;
-        }
-        else{ /**  Pop walking command i **/
-            if(i.targetZMP ==  SUPPORT_LEG_BOTH)
-                i.phase = double_support;
-            else
-                i.phase = single_support;
-            
-            stepAnkleQ.pop();
-        }
-        //Determine which Leg is swinging and compute the desired
-        //2-D ZMP point
-        //First two instructions DS + SS = 1 step
-        if(j<2){
-
-            //Only if StepAdjustment is true
-            if(i.phase == single_support)
-            {
-
-                
-                if(i.targetSupport ==  SUPPORT_LEG_RIGHT)
-                {
-          
-                    //Check for Kinematic Bounds on steps
-                    //Crop X axis
-                    SFoot_rot.zero();
-                    SFoot_angle = startR(2);
-                    KMath::KMat::transformations::makeRotation(SFoot_rot, SFoot_angle);
-                    SFoot_rot.prettyPrint();
-                    dx =   KVecFloat2(i.target(0)-startR(0),i.target(1)-startR(1));
-                    tempV = SFoot_rot.transp() * dx;
-                    tempV(0) = cropStep(tempV(0),NaoRobot.getWalkParameter(MaxStepX),NaoRobot.getWalkParameter(MinStepX));
-                    tempV(1) = cropStep(tempV(1),NaoRobot.getWalkParameter(MaxStepY),NaoRobot.getWalkParameter(MinStepY));
-                    tempV = SFoot_rot * tempV;
-                    i.target(0)= startR(0) + tempV(0);
-                    i.target(1)= startR(1) + tempV(1); 
-                    // if(UseStepAdjustment)
-                    // {
-                    //     //sa.solve((double) DCM_(0), (double) DCM_(1), (double) startR(0),
-                    //     // (double) startR(1), (double) i.target(0), (double) i.target(1), (double) SFoot_angle, 1);
-                    //     sa.solve((double) DCM_(0), (double) DCM_(1), (double) COP_(0),  (double) COP_(1), (double) startR(0), (double) startR(1),
-                    //     (double) i.target(0), (double) i.target(1), (double) SFoot_angle, 1);
-                    //     i.target(0)= sa.step_locationx;
-                    //     i.target(1)= sa.step_locationy;
-                    //     i.steps = (unsigned int) sa.step_instructions;
-                    //     // dx =  KVecFloat2(i.target(0)-startR(0),i.target(1)-startR(1));
-                    // }
-
-
-                }
-                else if(i.targetSupport== SUPPORT_LEG_LEFT)
-                {
-                   
-                    // Check for Kinematic Bounds on steps
-                    //Crop X axis
-                    SFoot_rot.zero();
-                    SFoot_angle = startL(2);
-                    KMath::KMat::transformations::makeRotation(SFoot_rot, SFoot_angle);
-                    SFoot_rot.prettyPrint();
-                    dx =  KVecFloat2(i.target(0)-startL(0),i.target(1)-startL(1));
-                    tempV = SFoot_rot.transp() * dx;
-                    tempV(0) = cropStep(tempV(0),NaoRobot.getWalkParameter(MaxStepX),NaoRobot.getWalkParameter(MinStepX));
-                    tempV(1) = cropStep(tempV(1),-NaoRobot.getWalkParameter(MinStepY),-NaoRobot.getWalkParameter(MaxStepY));
-                    tempV = SFoot_rot * tempV;
-                    i.target(0)= startL(0) + tempV(0);
-                    i.target(1)= startL(1) + tempV(1); 
-                    // if(UseStepAdjustment)
-                    // {
-
-
-                    //     //sa.solve((double) DCM_(0), (double) DCM_(1), 
-                    //     //(double) startL(0), (double) startL(1), (double) i.target(0), (double) i.target(1), (double) SFoot_angle, 0);
-                    //     sa.solve((double) DCM_(0), (double) DCM_(1), 
-                    //         (double) COP_(0),  (double) COP_(1), (double) startL(0), (double) startL(1), (double) i.target(0), (double) i.target(1), (double) SFoot_angle, 0);
-                        
-                    //     i.target(0)= sa.step_locationx;
-                    //     i.target(1)= sa.step_locationy;
-                    //     i.steps = (unsigned int) sa.step_instructions;
-                    //     //dx =  KVecFloat2(i.target(0)-startL(0),i.target(1)-startL(1));
-                    // }
-
-           
-                }
-            }
-
-
-            computeSwingLegAndZMP(targetL,targetR, target, startL, startR, i);
-            zmpi=i;
-            zmpi.target = target;
-            zmpQ.push(zmpi);
-            //To execute
-            walkInstructionbuffer.push(i);
-            startL = targetL;
-            startR = targetR;
-            //For next plan
-            planstartL = targetL;
-            planstartR = targetR;
-        }
-        else{
-            computeSwingLegAndZMP(plantargetL, plantargetR, plantarget, planstartL, planstartR, i);
-            zmpi=i;
-            zmpi.target = plantarget;
-            zmpQ.push(zmpi);
-            planstartL = plantargetL;
-            planstartR = plantargetR;
-        }
-        planned = i;
-        j++;
-    }
-
-}
-
-
-
-
-void zmpPlanner::plan(KVecFloat2 DCM_,KVecFloat2 COP_,bool UseStepAdjustment)
-{
-    generatePlan(DCM_,COP_,UseStepAdjustment);
-    planZMPTrajectory();
-    planAvailable = true;
-}
-
-
-
-void zmpPlanner::planZMPTrajectory()
-{
-    
-    KVecFloat3 ZMPref0,ZMPrefT, ZMPref;
-    unsigned int j = 0, p;
-    
-    while(zmpQ.size()>0){
-        WalkInstruction i = zmpQ.front();
-        p=0;
-        if(j<2){
-            target = i.target;
-            while(p<i.steps)
+            target = computeDesiredZMP(startL, startR, i);
+            footR = startR;
+            footL = startL;
+            unsigned int p = 0;
+            while (p < i.steps)
             {
                 /** Angle between the ending and starting foot orientation **/
-                float adiff = anglediff2(target(2),start(2));
+                float adiff = anglediff2(target(2), start(2));
                 /** ZMP Trajectory Generation **/
-                ZMPref(0)=interp.planFeetTrajectoryXY((float) p, target(0), start(0), i.steps-1.0);
-                ZMPref(1)=interp.planFeetTrajectoryXY((float) p, target(1), start(1), i.steps-1.0);
-                ZMPref(2)=start(2)+interp.LinearInterpolation( (float) p, adiff, 0.000,i.steps-1.0);
+                ZMPref(0) = interp.planFeetTrajectoryXY((float)p, target(0), start(0), i.steps - 1.0);
+                ZMPref(1) = interp.planFeetTrajectoryXY((float)p, target(1), start(1), i.steps - 1.0);
+                ZMPref(2) = start(2) + interp.LinearInterpolation((float)p, adiff, 0.000, i.steps - 1.0);
                 /** ZMP Point pushed to ZMP buffer **/
                 ZMPbuffer.push_back(ZMPref);
+                footRbuffer.push_back(footR);
+                footLbuffer.push_back(footL);
                 p++;
             }
+
+            add_DS_instruction = true;
             start = target;
-            ZMPref0 = start;
+            zmpQ.push(target);
         }
         else
         {
-            ZMPrefT = i.target;
-            while(p<i.steps)
+            std::cout << "Planning SS" << std::endl;
+
+            if (i.targetZMP == SUPPORT_LEG_BOTH)
+                i.phase = double_support;
+            else
+                i.phase = single_support;
+
+            if (i.targetSupport == SUPPORT_LEG_LEFT)
             {
-                /** Angle between the ending and starting foot orientation **/
-                float adiff = anglediff2(ZMPrefT(2),ZMPref0(2));
-                /** ZMP Trajectory Generation **/
-                ZMPref(0)=interp.planFeetTrajectoryXY((float) p, ZMPrefT(0), ZMPref0(0), i.steps-1.0);
-                ZMPref(1)=interp.planFeetTrajectoryXY((float) p, ZMPrefT(1), ZMPref0(1), i.steps-1.0);
-                ZMPref(2)=ZMPref0(2)+interp.LinearInterpolation( (float) p, adiff, 0.000,i.steps-1.0);
-                /** ZMP Point pushed to ZMP buffer **/
-                ZMPbuffer.push_back(ZMPref);
-                p++;
+                targetR = i.target;
+                // //Check for Kinematic Bounds on steps
+                Rotation2D<double> rotL(startL(5));
+
+                dx = Vector2d(targetR(0) - startL(0), targetR(1) - startL(1));
+                tempV = rotL.inverse() * dx;
+                tempV(0) = cropStep(tempV(0), robot.getWalkParameter(MaxStepX), robot.getWalkParameter(MinStepX));
+                tempV(1) = cropStep(tempV(1), -robot.getWalkParameter(MinStepY), -robot.getWalkParameter(MaxStepY));
+                tempV = rotL * tempV;
+                targetR(0) = startL(0) + tempV(0);
+                targetR(1) = startL(1) + tempV(1);
+                ZMPref = target;
+                footL = startL;
+                unsigned int p = 0;
+                while (p < i.steps)
+                {
+
+                    /** ZMP Point pushed to ZMP buffer **/
+                    ZMPbuffer.push_back(ZMPref);
+                    float adiff = anglediff2(targetR(2), startR(2));
+                    footR(0) = interp.planFeetTrajectoryXY((float)p, targetR(0), startR(0), i.steps - 1.0);
+                    footR(1) = interp.planFeetTrajectoryXY((float)p, targetR(1), startR(1), i.steps - 1.0);
+                    footR(2) = interp.CubicSplineInterpolation((float)p, 0.000, robot.getWalkParameter(StepZ) / 2.0, 1.25 * robot.getWalkParameter(StepZ), robot.getWalkParameter(StepZ) / 3.0, 0.000, i.steps - 1.0);
+                    footR(3) = 0.0;
+                    footR(4) = 0.0;
+                    footR(5) = startR(2) + interp.LinearInterpolation((float)p, adiff, 0.0, i.steps - 1.0);
+
+                    footRbuffer.push_back(footR);
+                    footLbuffer.push_back(footL);
+                    p++;
+                }
+                cout<<"Target R Foot"<<endl;
+                cout<<targetR<<endl;
+                startR= targetR;  
+                stepRQ.push(targetR);
             }
-            ZMPref0=ZMPrefT;
+            else if (i.targetSupport == SUPPORT_LEG_RIGHT)
+            {
+                // Check for Kinematic Bounds on steps
+                targetL = i.target;
+                Rotation2D<double> rotR(startR(5));
+                dx = Vector2d(targetL(0) - startR(0), targetR(1) - startR(1));
+                tempV = rotR.inverse() * dx;
+
+                tempV(0) = cropStep(tempV(0), robot.getWalkParameter(MaxStepX), robot.getWalkParameter(MinStepX));
+                tempV(1) = cropStep(tempV(1),robot.getWalkParameter(MaxStepY),robot.getWalkParameter(MinStepY));
+
+                tempV = rotR * tempV;
+                targetL(0) = startR(0) + tempV(0);
+                targetL(1) = startR(1) + tempV(1);
+                ZMPref = target;
+                footR = startR;
+                unsigned int p = 0;
+                while (p < i.steps)
+                {
+                    /** ZMP Point pushed to ZMP buffer **/
+                    ZMPbuffer.push_back(ZMPref);
+                    float adiff = anglediff2(targetL(2), startL(2));
+                    footL(0) = interp.planFeetTrajectoryXY((float)p, targetL(0), startL(0), i.steps - 1.0);
+                    footL(1) = interp.planFeetTrajectoryXY((float)p, targetL(1), startL(1), i.steps - 1.0);
+                    footL(2) = interp.CubicSplineInterpolation((float)p, 0.000, robot.getWalkParameter(StepZ) / 2.0, 1.25 * robot.getWalkParameter(StepZ), robot.getWalkParameter(StepZ) / 3.0, 0.000, i.steps - 1.0);
+                    footL(3) = 0.0;
+                    footL(4) = 0.0;
+                    footL(5) = startL(2) + interp.LinearInterpolation((float)p, adiff, 0.0, i.steps - 1.0);
+                    footRbuffer.push_back(footR);
+                    footLbuffer.push_back(footL);
+                    p++;
+                }
+                cout<<"Target LFOOT"<<endl;
+                cout<<targetL<<endl;
+                startL = targetL;
+
+                stepLQ.push(targetL);
+            }
+           
+                /**  Pop walking command i **/
+            stepAnkleQ.pop();
+            planned = i;
+            add_DS_instruction = false;
         }
-        zmpQ.pop();
-        j++;
+
     }
+     planAvailable = true;
+
 }
 
-void zmpPlanner::computeFeetCenterFromFeetAnkle(KVecFloat3& cl, KVecFloat3& cr, KVecFloat3 tl, KVecFloat3 tr)
+void zmpPlanner::plan()
 {
-        KMath::KMat::GenMatrix<float,2,2> rot;
-        float rel_feet_angle =anglemean(tl(2),tr(2));
-        KMath::KMat::transformations::makeRotation(rot,rel_feet_angle);
-        KVecFloat2 rr = rot * KVecFloat2(-NaoRobot.getWalkParameter(HX),NaoRobot.getWalkParameter(HY));
-        
-        cr(0)  = tr(0) + rr(0);
-        cr(1)  = tr(1) + rr(1);
-        cr(2)  = tr(2);
-
-        rr = rot * KVecFloat2(-NaoRobot.getWalkParameter(HX),-NaoRobot.getWalkParameter(HY));
-        cl(0) = tl(0) + rr(0);
-        cl(1) = tl(1) + rr(1);
-        cl(2) = tl(2);
-}
-
-void zmpPlanner::computeFeetAnkleFromFeetCenter(KVecFloat3& al, KVecFloat3& ar, KVecFloat3 cl, KVecFloat3 cr)
-{
-        KMath::KMat::GenMatrix<float,2,2> rot;
-        float rel_feet_angle =anglemean(cl(2),cr(2));
-        KMath::KMat::transformations::makeRotation(rot,rel_feet_angle);
-        KVecFloat2 rr = rot * KVecFloat2(NaoRobot.getWalkParameter(HX),-NaoRobot.getWalkParameter(HY));
-        
-        ar(0)  = cr(0) + rr(0);
-        ar(1)  = cr(1) + rr(1);
-        ar(2)  = cr(2);
-
-        rr = rot * KVecFloat2(NaoRobot.getWalkParameter(HX),NaoRobot.getWalkParameter(HY));
-        al(0) = cl(0) + rr(0);
-        al(1) = cl(1) + rr(1);
-        al(2) = cl(2);
+    if (planAvailable)
+    {
+        emptyPlan();
+        planAvailable = false;
+    }
+    generatePlan();
 }
 
 
-
-
-void  zmpPlanner::computeSwingLegAndZMP(KVecFloat3 &tl, KVecFloat3 &tr, KVecFloat3 &t, KVecFloat3 sl,  KVecFloat3 sr, WalkInstruction i)
+VectorXd zmpPlanner::computeDesiredZMP(VectorXd sl, VectorXd sr, WalkInstruction i)
 {
-    
-    if (i.targetZMP ==  SUPPORT_LEG_RIGHT){
-        tl = i.target;
-        tr = sr;
-    }
-    else if (i.targetZMP ==  SUPPORT_LEG_LEFT){
-        tr = i.target;
-        tl = sl;
-    }
-    else{
-        //No Swing
-        tl = sl;
-        tr = sr;
-    }
-    
-    
+    VectorXd t;
+    t.resize(3);
+    t.setZero();
+
     /** Computing the  Reference ZMP point **/
-    KMath::KMat::GenMatrix<float,2,2> rot;
-    
-    if(i.targetZMP== SUPPORT_LEG_RIGHT)
+
+    Rotation2D<double> rotL(sl(5));
+    Rotation2D<double> rotR(sr(5));
+    if (i.targetZMP == SUPPORT_LEG_RIGHT)
     {
         /** Right Support Phase **/
-        t=tr;
-        t(2)=anglemean(tl(2),tr(2));
-        KMath::KMat::transformations::makeRotation(rot,(float)t(2));
-        KVecFloat2 rr = rot * KVecFloat2(-NaoRobot.getWalkParameter(HX),NaoRobot.getWalkParameter(HY));
-        
-        t(0) += rr(0);
-        t(1) += rr(1);
-        
+        Vector2d rr = rotR * Vector2d(-robot.getWalkParameter(HX), robot.getWalkParameter(HY));
+        t(0) = rr(0) + sr(0); //x
+        t(1) = rr(1) + sr(1); //y
+        t(2) = sr(5);         //theta
     }
-    else if(i.targetZMP== SUPPORT_LEG_LEFT)
+    else if (i.targetZMP == SUPPORT_LEG_LEFT)
     {
         /** Left Support Phase **/
-        t=tl;
-        t(2)=anglemean(tl(2),tr(2));
-        KMath::KMat::transformations::makeRotation(rot,(float)t(2));
-        KVecFloat2 rr = rot * KVecFloat2(-NaoRobot.getWalkParameter(HX),-NaoRobot.getWalkParameter(HY));
-        t(0) += rr(0);
-        t(1) += rr(1);
+
+        Vector2d rr = rotL * Vector2d(-robot.getWalkParameter(HX), -robot.getWalkParameter(HY));
+        t(0) = rr(0) + sl(0);
+        t(1) = rr(1) + sl(1);
+        t(2) = sl(5);
     }
     else
     {
         /** Double Support Phase **/
-        float meanangle=anglemean(tl(2),tr(2));
-        t=tl;
+        Vector2d rr = rotL * Vector2d(-robot.getWalkParameter(HX), -robot.getWalkParameter(HY));
+        t(0) = rr(0) + sl(0);
+        t(1) = rr(1) + sl(1);
+        rr = rotR * Vector2d(-robot.getWalkParameter(HX), robot.getWalkParameter(HY));
+        t(0) += rr(0) + sr(0);
+        t(1) += rr(1) + sr(1);
+        t *= 0.5;
+        t(2) = anglemean(sl(5), sr(5));
         
-        /** planL,planR are the ankle positions, transforming them to Reference ZMP **/
-        KMath::KMat::transformations::makeRotation(rot,(float) meanangle);
-        KVecFloat2 rr = rot * KVecFloat2(-NaoRobot.getWalkParameter(HX),-NaoRobot.getWalkParameter(HY));
-        
-        t(0) += rr(0);
-        t(1) += rr(1);
-        
-        t+=tr;
-        rr = rot * KVecFloat2(-NaoRobot.getWalkParameter(HX),NaoRobot.getWalkParameter(HY));
-        
-        t(0) += rr(0);
-        t(1) += rr(1);
-        t.scalar_mult(0.5);
-        t(2)=meanangle;
     }
+    return t;
 }
 
+void zmpPlanner::emptyPlan()
+{
 
-void zmpPlanner::emptyPlan(){
-    
-
-    while(stepAnkleQ.size()>0)
+    while (stepAnkleQ.size() > 0)
         stepAnkleQ.pop();
 
+    while (stepLQ.size() > 0)
+        stepLQ.pop();
 
-    while (zmpQ.size()>0)
+    while (stepRQ.size() > 0)
+        stepRQ.pop();
+
+    while (zmpQ.size() > 0)
         zmpQ.pop();
-    
-    while(ZMPbuffer.size()>0)
+
+    while (ZMPbuffer.size() > 0)
         ZMPbuffer.pop_front();
-    
-    planned.targetZMP= SUPPORT_LEG_NONE;
-    planned.targetSupport= SUPPORT_LEG_NONE;
+
+    while (footRbuffer.size() > 0)
+        footRbuffer.pop_front();
+
+    while (footLbuffer.size() > 0)
+        footLbuffer.pop_front();
+
+    planned.targetZMP = SUPPORT_LEG_NONE;
+    planned.targetSupport = SUPPORT_LEG_NONE;
     planAvailable = false;
     planned.step_id = -1;
 }
-
-

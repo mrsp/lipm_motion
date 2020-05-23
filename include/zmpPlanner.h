@@ -1,60 +1,53 @@
 #ifndef  __ZMPPLANER_H__
 #define  __ZMPPLANER_H__
 
-#include "KMat.hpp"
 #include "KWalkMat.h"
 #include "motionDefines.h"
 #include "RobotParameters.h"
 #include <queue>          // std::queue
 #include <boost/circular_buffer.hpp>
 #include <iostream>
-//#include "StepAdjustment.h"
+#include <eigen3/Eigen/Dense>
+#include <eigen3/Eigen/Geometry> 
 
+#define M_PI 3.14159265358979323846264338327950288
+//#include "StepAdjustment.h"
+using namespace Eigen;
 using namespace std;
+
 class zmpPlanner
 {
     
 private:
-    RobotParameters &NaoRobot;
-    WalkInstruction planned, zmpi;
+    RobotParameters &robot;
+    WalkInstruction planned;
     KWalkMat interp;
-    float maxX,maxY,minX,minY;
 public:
-    /** Walking Instruction to be executed **/
-    
-    std::queue<WalkInstruction> walkInstructionbuffer;
-    KVecFloat3 target, start, startL, startR, targetR, targetL, plantargetL, plantargetR, plantarget, planstartL, planstartR;
+    VectorXd start, target, startL, startR, targetR, targetL, footR, footL, ZMPref;
     /** ZMP Buffer for the Prediction Horizon **/
-    boost::circular_buffer<KVecFloat3> ZMPbuffer;
+    boost::circular_buffer<VectorXd> ZMPbuffer,footRbuffer, footLbuffer;
     /** Queues needed for planning **/
-    std::queue<WalkInstruction> stepAnkleQ, zmpQ;
-    bool planAvailable, firstrun;
+    std::queue<WalkInstruction> stepAnkleQ;
+    std::queue<VectorXd> zmpQ, stepLQ, stepRQ;
+    bool planAvailable;
 
     //Methods
-    void planZMPTrajectory();
-    void computeSwingLegAndZMP(KVecFloat3 &tl, KVecFloat3 &tr, KVecFloat3 &t, KVecFloat3 sl,  KVecFloat3 sr, WalkInstruction i);
-    void generatePlan(KVecFloat2 DCM_, KVecFloat2 COP_,bool UseStepAdjustment);
+    void setFeet(VectorXd  sl, VectorXd sr);
+    VectorXd computeDesiredZMP(VectorXd sl, VectorXd sr, WalkInstruction i);
+    void generatePlan();
     void emptyPlan();
-    void plan(KVecFloat2 DCM_,KVecFloat2 COP_,bool UseStepAdjustment);
-    zmpPlanner(RobotParameters &robot);
+    void plan();
+    zmpPlanner(RobotParameters &robot_);
     //Step Adjustment
     //StepAdjustment sa;
-    KVecFloat2 dx, tempV;
-    KMath::KMat::GenMatrix<float,2,2>  SFoot_rot;
-    float SFoot_angle;
+    Vector2d dx, tempV;
+
     
-    void computeFeetAnkleFromFeetCenter(KVecFloat3& al, KVecFloat3& ar, KVecFloat3 cl, KVecFloat3 cr);
-    void computeFeetCenterFromFeetAnkle(KVecFloat3& cl, KVecFloat3& cr, KVecFloat3 tl, KVecFloat3 tr);
-    void setFeet(KVecFloat3 sl, KVecFloat3 sr);
-    /** @fn float anglemean(float l, float r) const
-     *  @brief Computation of mean angle
-    **/
-   
-    float anglemean(float l, float r) const
+    double anglemean(double l, double r) const
     {
-        return (float) ((double) l + anglediff2( (double) r, (double) l) / 2.0);
+        return (double) ((double) l + anglediff2( (double) r, (double) l) / 2.0);
     }
-    float cropStep(float f_, float max_, float min_)
+    float cropStep(double f_, double max_, double min_)
     {
         return fmax(min_, fmin(f_, max_));
     }

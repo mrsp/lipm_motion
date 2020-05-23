@@ -1,6 +1,6 @@
 #ifndef __MOTIONDEFINES_H__
 #define __MOTIONDEFINES_H__
-#include "KMat.hpp"
+#include <eigen3/Eigen/Dense>
 enum SupportLeg
 {
     SUPPORT_LEG_NONE = 0, SUPPORT_LEG_LEFT, SUPPORT_LEG_RIGHT, SUPPORT_LEG_BOTH
@@ -25,7 +25,7 @@ enum {
 class WalkInstruction
 {
 public:
-    KVecFloat3 target;   //2D swing foot pose
+    Eigen::VectorXd target;   //6D swing foot pose
     SupportLeg targetSupport, targetZMP; //which IS the support foot in this instruction
     unsigned steps; //walk instruction steps 
     bool phase; //DS or SS;
