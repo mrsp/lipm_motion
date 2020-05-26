@@ -3,10 +3,14 @@
 #include "dcmPlanner.h"
 #include "postureStabilizer.h"
 #include <iostream>
+#include <ros/ros.h>
+#include <lipm_motion/TrajectoryPoints.h>
 
-int main()
+int main(int argc, char** argv)
 {
 
+
+    ros::init(argc,argv,"lipm_motion_node");
 
     /** Compute Reference Points: x-y-z-roll-pitch-yaw **/
     VectorXd planL;
@@ -55,15 +59,64 @@ int main()
     std::cout<<" "<<tp.footLbuffer.size()<<std::endl;
     std::cout<<" "<<tp.footRbuffer.size()<<std::endl;
 
-    VectorXf comX, comY;
-    comX.resize(dp.CoMBuffer.size());
-    comY.resize(dp.CoMBuffer.size());
+    lipm_motion::TrajectoryPoints CoM_msg, VRP_msg, DCM_msg, footL_msg, footR_msg;
+    CoM_msg.positions.resize(dp.CoMBuffer.size());
+    CoM_msg.velocities.resize(dp.CoMBuffer.size());
+    CoM_msg.accelerations.resize(dp.CoMBuffer.size());
+
+    VRP_msg.positions.resize(dp.VRPBuffer.size());
+
+    DCM_msg.positions.resize(dp.DCMBuffer.size());
+    DCM_msg.velocities.resize(dp.DCMBuffer.size());
+
+    footL_msg.positions.resize(tp.footLbuffer.size());
+    footR_msg.positions.resize(tp.footRbuffer.size());
+
+   
     int j=0;
     while(dp.CoMBuffer.size()>0)
     {
-        comX(j) = dp.CoMBuffer[j](0);
-        comY(j) = dp.CoMBuffer[j](1);
+        CoM_msg.positions[j].x = dp.CoMBuffer[j](0);
+        CoM_msg.positions[j].y = dp.CoMBuffer[j](1);
+        CoM_msg.positions[j].z = dp.CoMBuffer[j](2);
+
+        CoM_msg.velocities[j].x = dp.CoMBuffer[j](3);
+        CoM_msg.velocities[j].y = dp.CoMBuffer[j](4);
+        CoM_msg.velocities[j].z = dp.CoMBuffer[j](5);
+
+        CoM_msg.accelerations[j].x = dp.CoMBuffer[j](6);
+        CoM_msg.accelerations[j].y = dp.CoMBuffer[j](7);
+        CoM_msg.accelerations[j].z = dp.CoMBuffer[j](8);    
+
+
+        VRP_msg.positions[j].x = dp.VRPBuffer[j](0);
+        VRP_msg.positions[j].y = dp.VRPBuffer[j](1);
+        VRP_msg.positions[j].z = dp.VRPBuffer[j](2);
+
+        DCM_msg.positions[j].x = dp.DCMBuffer[j](0);
+        DCM_msg.positions[j].y = dp.DCMBuffer[j](1);
+        DCM_msg.positions[j].z = dp.DCMBuffer[j](2);
+
+        DCM_msg.velocities[j].x = dp.DCMBuffer[j](3);
+        DCM_msg.velocities[j].y = dp.DCMBuffer[j](4);
+        DCM_msg.velocities[j].z = dp.DCMBuffer[j](5);   
+
+        footL_msg.positions[j].x = tp.footLbuffer[j](0);
+        footL_msg.positions[j].y = tp.footLbuffer[j](1);
+        footL_msg.positions[j].z = tp.footLbuffer[j](2);
+
+
+        footR_msg.positions[j].x = tp.footRbuffer[j](0);
+        footR_msg.positions[j].y = tp.footRbuffer[j](1);
+        footR_msg.positions[j].z = tp.footRbuffer[j](2);
+
         dp.CoMBuffer.pop_front();
+        dp.VRPBuffer.pop_front();
+        dp.DCMBuffer.pop_front();
+        tp.footLbuffer.pop_front();
+        tp.footRbuffer.pop_front();
+
+        j++;
     }
 
     return 0;

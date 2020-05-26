@@ -1,21 +1,40 @@
-cmake_minimum_required(VERSION 3.6)
+cmake_minimum_required(VERSION 3.5)
 project(lipm_motion)
+
+add_compile_options(-std=c++11)
+add_definitions("-DBOOST_MPL_LIMIT_LIST_SIZE=30")
+
+find_package(catkin REQUIRED COMPONENTS
+roscpp
+std_msgs
+geometry_msgs
+message_generation
+)
+
+add_message_files(
+FILES
+TrajectoryPoints.msg
+)
+generate_messages(
+DEPENDENCIES
+std_msgs
+geometry_msgs
+)
+
 
 
 find_package(Eigen3)
+find_package(Boost REQUIRED)
 
-if (${EIGEN3_FOUND})
-  include_directories(${EIGEN3_INCLUDE_DIR})
-else()
-  message(STATUS "Eigen3 not found")
-endif()
-
-
-find_package(Boost)
-
-include_directories(include ${Boost_INCLUDE_DIRS})
+catkin_package(
+  INCLUDE_DIRS include
+  LIBRARIES lipm_motion
+  CATKIN_DEPENDS roscpp std_msgs  message_runtime
+  DEPENDS Eigen3 Boost
+)
 
 
+include_directories(include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} ${Eigen3_INCLUDE_DIR})
 
 add_executable(lipm_motion main.cpp zmpPlanner.cpp dcmPlanner.cpp delayedObserverDCM.cpp postureStabilizer.cpp RobotParameters.cpp)
-target_link_libraries(lipm_motion ${Boost_LIBRARIES})
+target_link_libraries(lipm_motion ${catkin_LIBRARIES} ${Eigen3_LIBRARIES} ${Boost_LIBRARIES})
