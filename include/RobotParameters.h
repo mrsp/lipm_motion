@@ -47,7 +47,7 @@ public:
         WalkParameters[StepZ] = 0.0175;
         WalkParameters[H0] = 0.1/2.00;
         WalkParameters[HY] = 0.00;   
-        WalkParameters[HX] = -0.025; 
+        WalkParameters[HX] = 0.00; 
         WalkParameters[ComZ] = 0.26;
         WalkParameters[Tstep] = 0.4; //0.28
         WalkParameters[Tinit]= 0.4;
