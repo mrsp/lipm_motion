@@ -1,4 +1,4 @@
-#include "dcmPlanner.h"
+#include <lipm_motion/dcmPlanner.h>
 
 dcmPlanner::dcmPlanner(RobotParameters &robot_):robot(robot_), dObsDCMx(robot_), dObsDCMy(robot),  CoMBuffer(10 * (int)robot.getWalkParameter(PreviewWindow)), DCMBuffer(10 * (int)robot.getWalkParameter(PreviewWindow)), VRPBuffer(10 * (int)robot.getWalkParameter(PreviewWindow))
 {

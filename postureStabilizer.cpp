@@ -1,4 +1,4 @@
-#include "postureStabilizer.h"
+#include <lipm_motion/postureStabilizer.h>
 
 postureStabilizer::postureStabilizer(RobotParameters &robot_) : robot(robot_)
 {

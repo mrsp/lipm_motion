@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 project(lipm_motion)
 
-add_compile_options(-std=c++11)
+add_compile_options(-std=c++11 )
 add_definitions("-DBOOST_MPL_LIMIT_LIST_SIZE=30")
 
 find_package(catkin REQUIRED COMPONENTS
@@ -37,5 +37,5 @@ catkin_package(
 
 include_directories(include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} ${Eigen3_INCLUDE_DIR})
 
-add_executable(lipm_motion main.cpp zmpPlanner.cpp dcmPlanner.cpp delayedObserverDCM.cpp postureStabilizer.cpp RobotParameters.cpp)
+add_executable(lipm_motion main.cpp lipm.cpp zmpPlanner.cpp dcmPlanner.cpp delayedObserverDCM.cpp RobotParameters.cpp)
 target_link_libraries(lipm_motion ${catkin_LIBRARIES} ${Eigen3_LIBRARIES} ${Boost_LIBRARIES})

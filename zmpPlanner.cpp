@@ -1,4 +1,4 @@
-#include "zmpPlanner.h"
+#include <lipm_motion/zmpPlanner.h>
 
 zmpPlanner::zmpPlanner(RobotParameters &robot_) : robot(robot_), ZMPbuffer(10 * (int)robot.getWalkParameter(PreviewWindow)), footRbuffer(10 * (int)robot.getWalkParameter(PreviewWindow)), footLbuffer(10 * (int)robot.getWalkParameter(PreviewWindow))
 { //sa(robot){

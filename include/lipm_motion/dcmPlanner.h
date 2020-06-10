@@ -3,9 +3,9 @@
 #include "RobotParameters.h"
 #include <eigen3/Eigen/Dense>
 #include <boost/circular_buffer.hpp>
-#include "KMat.hpp"
+#include <lipm_motion/KMat.hpp>
 #include <iostream>
-#include "delayedObserverDCM.h"
+#include <lipm_motion/delayedObserverDCM.h>
 #define Np 102
 using namespace Eigen;
 using namespace std;

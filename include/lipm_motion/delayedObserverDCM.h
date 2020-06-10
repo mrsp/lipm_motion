@@ -3,7 +3,7 @@
 
 #include <eigen3/Eigen/Dense>
 #include <iostream>
-#include "RobotParameters.h"
+#include <lipm_motion/RobotParameters.h>
 #include <queue>
 
 #define ZMPDELAY 3

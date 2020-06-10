@@ -10,7 +10,7 @@
 #define _KWALKMAT_
 #include <math.h>
 #include <vector>
-#include "KMat.hpp"
+#include <lipm_motion/KMat.hpp>
 class KWalkMat
 {
 

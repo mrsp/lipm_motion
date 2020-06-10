@@ -1,9 +1,9 @@
 #ifndef  __ZMPPLANER_H__
 #define  __ZMPPLANER_H__
 
-#include "KWalkMat.h"
-#include "motionDefines.h"
-#include "RobotParameters.h"
+#include <lipm_motion/KWalkMat.h>
+#include <lipm_motion/motionDefines.h>
+#include <lipm_motion/RobotParameters.h>
 #include <queue>          // std::queue
 #include <boost/circular_buffer.hpp>
 #include <iostream>

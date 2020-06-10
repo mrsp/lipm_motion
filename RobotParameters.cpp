@@ -1,4 +1,4 @@
-#include "RobotParameters.h"
+#include <lipm_motion/RobotParameters.h>
 
 #include <stdio.h>
 #include <stdlib.h>

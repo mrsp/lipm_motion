@@ -1,4 +1,4 @@
-#include "delayedObserverDCM.h"
+#include <lipm_motion/delayedObserverDCM.h>
 
 delayedObserverDCM::delayedObserverDCM(RobotParameters &robot_):robot(robot_)
 {
