@@ -7,89 +7,107 @@ lipm::lipm(ros::NodeHandle nh_, RobotParameters robot_)
     ros::NodeHandle n_p("~");
     isPlanAvailable = false;
 
-
     zp = new zmpPlanner(robot);
     dp = new dcmPlanner(robot);
-    CoM_pub = nh.advertise<nav_msgs::Path>("lipm_motion/CoM",1000);
-    DCM_pub = nh.advertise<nav_msgs::Path>("lipm_motion/DCM",1000);
-    VRP_pub = nh.advertise<nav_msgs::Path>("lipm_motion/VRP",1000);
-    footL_pub = nh.advertise<nav_msgs::Path>("lipm_motion/LLeg",1000);
-    footR_pub = nh.advertise<nav_msgs::Path>("lipm_motion/RLeg",1000);
-    as_ = new actionlib::SimpleActionServer<lipm_motion::MotionPlanAction>(nh_, "lipm_motion/plan", boost::bind(&lipm::desiredFootstepsCb, this, _1),false);
+    CoM_pub = nh.advertise<nav_msgs::Path>("lipm_motion/CoM", 1000);
+    DCM_pub = nh.advertise<nav_msgs::Path>("lipm_motion/DCM", 1000);
+    VRP_pub = nh.advertise<nav_msgs::Path>("lipm_motion/VRP", 1000);
+    footL_pub = nh.advertise<nav_msgs::Path>("lipm_motion/LLeg", 1000);
+    footR_pub = nh.advertise<nav_msgs::Path>("lipm_motion/RLeg", 1000);
+    as_ = new actionlib::SimpleActionServer<lipm_motion::MotionPlanAction>(nh, "lipm_motion/plan", boost::bind(&lipm::desiredFootstepsCb, this, _1), false);
     as_->start();
 }
 
 void lipm::desiredFootstepsCb(const lipm_motion::MotionPlanGoalConstPtr &goal)
 {
-    VectorXd planL;
-    planL.resize(6);
-    planL.setZero();
-    planL(1) = 0.05;
-    VectorXd planR;
-    planR.resize(6);
-    planR.setZero();
-    planR(1) = -0.05;
-    VectorXd temp;
-    temp.resize(6);
+    std::cout<<"Motion Planning"<<std::endl;
+    Vector3d lpos;
+    lpos << goal->lfoot.position.x, goal->lfoot.position.y, goal->lfoot.position.z;
+    Quaterniond lq(goal->lfoot.orientation.w, goal->lfoot.orientation.x, goal->lfoot.orientation.y, goal->lfoot.orientation.z);
 
+    Vector3d rpos;
+    rpos << goal->rfoot.position.x, goal->rfoot.position.y, goal->rfoot.position.z;
+    Quaterniond rq(goal->rfoot.orientation.w, goal->rfoot.orientation.x, goal->rfoot.orientation.y, goal->rfoot.orientation.z);
 
-    zp->setFeet(planL, planR);
+    VectorXd rfoot;
+    rfoot.resize(6);
+    rfoot.setZero();
+    VectorXd lfoot;
+    lfoot.resize(6);
+    lfoot.setZero();
 
-    /** Initial Walking Instruction **/
+    //Initial Foot Poses
+    lfoot.head(3) = lpos;
+    lfoot.tail(3) = lq.toRotationMatrix().eulerAngles(0, 1, 2);
+    rfoot.head(3) = rpos;
+    rfoot.tail(3) = rq.toRotationMatrix().eulerAngles(0, 1, 2);
+    zp->setFeet(lfoot, rfoot);
+
+    unsigned int j = 0;
     WalkInstruction i;
-    temp(0) = 0.05;
-    i.target = planL + temp;
-    i.targetSupport = SUPPORT_LEG_RIGHT;
-    /** ZMP in the Middle of Convex Hull **/
-    i.targetZMP = SUPPORT_LEG_RIGHT;
-    /** Number of Discrete Time steps of the Initial Walking Instruction **/
-    i.steps = 100;
-    i.step_id = -1;
-    /** Adding the Walking Instruction to the Walking Buffer for Execution **/
-    zp->stepAnkleQ.push(i);
+    i.steps = 1000;
+    feedback_.percent_completed = 0;
+    result_.status = 0;
+    while (j < goal->footsteps.size())
+    {
+        if (goal->footsteps[j].leg == 0)
+        {
+            lpos(0) = goal->footsteps[j].pose.position.x;
+            lpos(1) = goal->footsteps[j].pose.position.y;
+            lpos(2) = goal->footsteps[j].pose.position.z;
+            lq.w() = goal->footsteps[j].pose.orientation.w;
+            lq.x() = goal->footsteps[j].pose.orientation.x;
+            lq.y() = goal->footsteps[j].pose.orientation.y;
+            lq.z() = goal->footsteps[j].pose.orientation.z;
 
-    temp(0) = 0.06;
-    i.target = planR + temp;
-    i.targetSupport = SUPPORT_LEG_LEFT;
-    /** ZMP in the Middle of Convex Hull **/
-    i.targetZMP = SUPPORT_LEG_LEFT;
-    /** Number of Discrete Time steps of the Initial Walking Instruction **/
-    i.steps = 100;
-    i.step_id = -1;
-    /** Adding the Walking Instruction to the Walking Buffer for Execution **/
-    zp->stepAnkleQ.push(i);
+            i.target.head(3) = lpos;
+            i.target.tail(3) = lq.toRotationMatrix().eulerAngles(0, 1, 2);
+            i.targetSupport = SUPPORT_LEG_RIGHT;
+            if (j == goal->footsteps.size() - 1)
+            {
+                i.targetZMP = SUPPORT_LEG_BOTH;
+            }
+            else
+            {
+                i.targetZMP = SUPPORT_LEG_RIGHT;
+            }
+        }
+        else
+        {
+            rpos(0) = goal->footsteps[j].pose.position.x;
+            rpos(1) = goal->footsteps[j].pose.position.y;
+            rpos(2) = goal->footsteps[j].pose.position.z;
+            rq.w() = goal->footsteps[j].pose.orientation.w;
+            rq.x() = goal->footsteps[j].pose.orientation.x;
+            rq.y() = goal->footsteps[j].pose.orientation.y;
+            rq.z() = goal->footsteps[j].pose.orientation.z;
 
-    temp(0) = 0.06;
-    i.target = planL + temp;
-    i.targetSupport = SUPPORT_LEG_RIGHT;
-    /** ZMP in the Middle of Convex Hull **/
-    i.targetZMP = SUPPORT_LEG_RIGHT;
-    /** Number of Discrete Time steps of the Initial Walking Instruction **/
-    i.steps = 100;
-    i.step_id = -1;
-    /** Adding the Walking Instruction to the Walking Buffer for Execution **/
-    zp->stepAnkleQ.push(i);
+            i.target.head(3) = rpos;
+            i.target.tail(3) = rq.toRotationMatrix().eulerAngles(0, 1, 2);
+            i.targetSupport = SUPPORT_LEG_LEFT;
+            if (j == goal->footsteps.size() - 1)
+            {
+                i.targetZMP = SUPPORT_LEG_BOTH;
+            }
+            else
+            {
+                i.targetZMP = SUPPORT_LEG_LEFT;
+            }
+        }
+        i.step_id = j;
+        zp->stepAnkleQ.push(i);
+        j++;
+        feedback_.percent_completed = j/goal->footsteps.size();
 
-    i.target = planL + temp;
-    i.targetSupport = SUPPORT_LEG_RIGHT;
-    /** ZMP in the Middle of Convex Hull **/
-    i.targetZMP = SUPPORT_LEG_BOTH;
-    /** Number of Discrete Time steps of the Initial Walking Instruction **/
-    i.steps = 100;
-    i.step_id = -1;
-    /** Adding the Walking Instruction to the Walking Buffer for Execution **/
-    zp->stepAnkleQ.push(i);
+    }
 
-
-
-
+    
     zp->plan();
     Vector2f DCM, CoM, VRP;
     DCM.setZero();
     CoM.setZero();
     VRP.setZero();
     dp->plan(zp->ZMPbuffer, DCM, CoM, VRP);
-
 
     CoM_path.poses.resize(dp->CoMBuffer.size());
     CoM_path.header.stamp = ros::Time::now();
@@ -131,7 +149,7 @@ void lipm::desiredFootstepsCb(const lipm_motion::MotionPlanGoalConstPtr &goal)
     footR_msg.header.stamp = ros::Time::now();
     footR_msg.header.frame_id = "odom";
 
-    int j = 0;
+    j = 0;
     while (j < dp->CoMBuffer.size())
     {
 
@@ -193,21 +211,21 @@ void lipm::desiredFootstepsCb(const lipm_motion::MotionPlanGoalConstPtr &goal)
         j++;
     }
     isPlanAvailable = true;
-}
+    result_.status = 1;
 
+}
 
 void lipm::publishPath()
 {
-    if(!isPlanAvailable)
+    if (!isPlanAvailable)
         return;
-    
+
     CoM_pub.publish(CoM_path);
     DCM_pub.publish(DCM_path);
     VRP_pub.publish(VRP_path);
     footL_pub.publish(footL_path);
     footR_pub.publish(footR_path);
 }
-
 
 lipm::~lipm()
 {

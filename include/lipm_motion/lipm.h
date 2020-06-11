@@ -21,14 +21,15 @@ private:
     ros::Publisher CoM_pub,DCM_pub,VRP_pub,footL_pub,footR_pub;
     lipm_motion::TrajectoryPoints CoM_msg, VRP_msg, DCM_msg, footL_msg, footR_msg;
     nav_msgs::Path CoM_path, footL_path, footR_path, DCM_path, VRP_path;
-    actionlib::SimpleActionServer<lipm_motion::MotionPlanAction> *as_; // NodeHandle instance must be created before this line. Otherwise strange error occurs.
     lipm_motion::MotionPlanResult result_;
     lipm_motion::MotionPlanFeedback feedback_;
 
 public:
+    actionlib::SimpleActionServer<lipm_motion::MotionPlanAction> *as_; 
+
     ~lipm();
     lipm(ros::NodeHandle nh_, RobotParameters robot_);
-    /** @fn desiredFootstepsCb()
+    /** @fn desiredFootstepsCb(const lipm_motion::MotionPlanGoalConstPtr &goal)
      * @brief computes a desired motion plan for CoM/DCM/VRP and legs
      */
     void desiredFootstepsCb(const lipm_motion::MotionPlanGoalConstPtr &goal);
