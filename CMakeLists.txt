@@ -10,16 +10,26 @@ std_msgs
 geometry_msgs
 nav_msgs
 message_generation
+actionlib
+actionlib_msgs
 )
 
 add_message_files(
 FILES
 TrajectoryPoints.msg
+StepTarget.msg
 )
+add_action_files(
+  DIRECTORY action
+  FILES MotionPlan.action
+)
+
 generate_messages(
 DEPENDENCIES
 std_msgs
 geometry_msgs
+lipm_motion
+actionlib_msgs
 )
 
 

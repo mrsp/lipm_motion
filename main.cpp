@@ -10,7 +10,7 @@ int main(int argc, char **argv)
     
     lm = new lipm(nh,robot);
 
-    lm->desiredFootstepsCb();
+    //lm->desiredFootstepsCb();
     static ros::Rate rate(50);
     while (ros::ok())
     {

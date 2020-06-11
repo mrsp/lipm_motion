@@ -1,0 +1,10 @@
+# Define the goal
+geometry_msgs/Pose lfoot
+geometry_msgs/Pose rfoot
+lipm_motion/StepTarget[] footsteps
+---
+# Define the result
+int32 status
+---
+# Define a feedback message
+float32 percent_completed

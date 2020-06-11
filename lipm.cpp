@@ -15,9 +15,11 @@ lipm::lipm(ros::NodeHandle nh_, RobotParameters robot_)
     VRP_pub = nh.advertise<nav_msgs::Path>("lipm_motion/VRP",1000);
     footL_pub = nh.advertise<nav_msgs::Path>("lipm_motion/LLeg",1000);
     footR_pub = nh.advertise<nav_msgs::Path>("lipm_motion/RLeg",1000);
+    as_ = new actionlib::SimpleActionServer<lipm_motion::MotionPlanAction>(nh_, "lipm_motion/plan", boost::bind(&lipm::desiredFootstepsCb, this, _1),false);
+    as_->start();
 }
 
-void lipm::desiredFootstepsCb()
+void lipm::desiredFootstepsCb(const lipm_motion::MotionPlanGoalConstPtr &goal)
 {
     VectorXd planL;
     planL.resize(6);
