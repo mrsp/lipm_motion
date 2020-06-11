@@ -21,6 +21,9 @@ lipm::lipm(ros::NodeHandle nh_, RobotParameters robot_)
 void lipm::desiredFootstepsCb(const lipm_motion::MotionPlanGoalConstPtr &goal)
 {
     std::cout<<"Motion Planning"<<std::endl;
+    zp->emptyPlan();
+    dp->emptyPlan();
+
     Vector3d lpos;
     lpos << goal->lfoot.position.x, goal->lfoot.position.y, goal->lfoot.position.z;
     Quaterniond lq(goal->lfoot.orientation.w, goal->lfoot.orientation.x, goal->lfoot.orientation.y, goal->lfoot.orientation.z);
@@ -45,7 +48,8 @@ void lipm::desiredFootstepsCb(const lipm_motion::MotionPlanGoalConstPtr &goal)
 
     unsigned int j = 0;
     WalkInstruction i;
-    i.steps = 1000;
+    i.target.resize(6);
+    i.steps = 100;
     feedback_.percent_completed = 0;
     result_.status = 0;
     while (j < goal->footsteps.size())
@@ -98,7 +102,7 @@ void lipm::desiredFootstepsCb(const lipm_motion::MotionPlanGoalConstPtr &goal)
         zp->stepAnkleQ.push(i);
         j++;
         feedback_.percent_completed = j/goal->footsteps.size();
-
+        as_->publishFeedback(feedback_);
     }
 
     
@@ -109,6 +113,11 @@ void lipm::desiredFootstepsCb(const lipm_motion::MotionPlanGoalConstPtr &goal)
     VRP.setZero();
     dp->plan(zp->ZMPbuffer, DCM, CoM, VRP);
 
+
+
+
+    lipm_motion::TrajectoryPoints CoM_msg, VRP_msg, DCM_msg, footL_msg, footR_msg;
+    nav_msgs::Path CoM_path, footL_path, footR_path, DCM_path, VRP_path;
     CoM_path.poses.resize(dp->CoMBuffer.size());
     CoM_path.header.stamp = ros::Time::now();
     CoM_path.header.frame_id = "odom";
@@ -212,20 +221,26 @@ void lipm::desiredFootstepsCb(const lipm_motion::MotionPlanGoalConstPtr &goal)
     }
     isPlanAvailable = true;
     result_.status = 1;
-
-}
-
-void lipm::publishPath()
-{
-    if (!isPlanAvailable)
-        return;
-
+    as_->setSucceeded(result_);
+    //publishPath();
     CoM_pub.publish(CoM_path);
     DCM_pub.publish(DCM_path);
     VRP_pub.publish(VRP_path);
     footL_pub.publish(footL_path);
     footR_pub.publish(footR_path);
 }
+
+// void lipm::publishPath()
+// {
+//     if (!isPlanAvailable)
+//         return;
+
+//     CoM_pub.publish(CoM_path);
+//     DCM_pub.publish(DCM_path);
+//     VRP_pub.publish(VRP_path);
+//     footL_pub.publish(footL_path);
+//     footR_pub.publish(footR_path);
+// }
 
 lipm::~lipm()
 {

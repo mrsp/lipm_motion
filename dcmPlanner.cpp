@@ -106,7 +106,7 @@ dcmPlanner::dcmPlanner(RobotParameters &robot_):robot(robot_), dObsDCMx(robot_),
 
     R.resize(Np,Np);
     R.setIdentity();
-    R*=1.0e-4;
+    R*=1.0e-3;
 
     qx = 0.05;
     qv = 0.02;
@@ -192,11 +192,7 @@ void dcmPlanner::setState(Vector2f DCM, Vector2f CoM, Vector2f VRP)
 void dcmPlanner::plan(boost::circular_buffer<VectorXd> & VRPRef, Vector2f DCM, Vector2f CoM,  Vector2f VRP)
 {
 
-     if(planAvailable)
-     {   
-         emptyPlan();
-         planAvailable = false;
-     }
+
   while(VRPRef.size()>0)
   {
 
@@ -303,6 +299,8 @@ void dcmPlanner::plan(boost::circular_buffer<VectorXd> & VRPRef, Vector2f DCM, V
 
 void dcmPlanner::emptyPlan()
 {
+    if(!planAvailable)
+        return;
      while (CoMBuffer.size() > 0)
         CoMBuffer.pop_front();
     

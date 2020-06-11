@@ -62,6 +62,7 @@ void delayedObserverDCM::setState(Vector4f x_)
 }
 
 
+
 void delayedObserverDCM::update(float u_, float zmp_, float com_)
 {
     

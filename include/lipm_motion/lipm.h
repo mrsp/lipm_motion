@@ -19,8 +19,7 @@ private:
     dcmPlanner* dp;
     bool isPlanAvailable;
     ros::Publisher CoM_pub,DCM_pub,VRP_pub,footL_pub,footR_pub;
-    lipm_motion::TrajectoryPoints CoM_msg, VRP_msg, DCM_msg, footL_msg, footR_msg;
-    nav_msgs::Path CoM_path, footL_path, footR_path, DCM_path, VRP_path;
+
     lipm_motion::MotionPlanResult result_;
     lipm_motion::MotionPlanFeedback feedback_;
 

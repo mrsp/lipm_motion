@@ -9,13 +9,14 @@ int main(int argc, char **argv)
     lipm* lm;
     
     lm = new lipm(nh,robot);
-
-    static ros::Rate rate(50);
-    while (ros::ok())
-    {
-        lm->publishPath();
-        rate.sleep();
-    }
+    ros::spin();
+    // static ros::Rate rate(50);
+    // while (ros::ok())
+    // {
+    //     lm->publishPath();
+    //     ros::spinOnce();
+    //     rate.sleep();
+    // }
     delete lm;
     return 0;
 }

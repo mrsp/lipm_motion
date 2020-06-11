@@ -193,11 +193,7 @@ void zmpPlanner::generatePlan()
 
 void zmpPlanner::plan()
 {
-    if (planAvailable)
-    {
-        emptyPlan();
-        planAvailable = false;
-    }
+ 
     generatePlan();
 }
 
@@ -247,7 +243,8 @@ VectorXd zmpPlanner::computeDesiredZMP(VectorXd sl, VectorXd sr, WalkInstruction
 
 void zmpPlanner::emptyPlan()
 {
-
+    if(!planAvailable)
+        return;
     while (stepAnkleQ.size() > 0)
         stepAnkleQ.pop();
 
@@ -273,4 +270,15 @@ void zmpPlanner::emptyPlan()
     planned.targetSupport = SUPPORT_LEG_NONE;
     planAvailable = false;
     planned.step_id = -1;
+
+    start.setZero();
+    target.setZero();
+    startL.setZero();
+    targetL.setZero();
+    startR.setZero();
+    targetR.setZero();
+    footR.setZero();
+    footL.setZero();
+    ZMPref.setZero();
+
 }
