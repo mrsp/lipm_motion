@@ -107,11 +107,11 @@ void lipm::desiredFootstepsCb(const lipm_motion::MotionPlanGoalConstPtr &goal)
 
     
     zp->plan();
-    Vector2f DCM, CoM, VRP;
+    Vector2d DCM, CoM, VRP;
     DCM.setZero();
     CoM.setZero();
     VRP.setZero();
-    dp->plan(zp->ZMPbuffer, DCM, CoM, VRP);
+    dp->plan(zp->ZMPbuffer);
 
 
 

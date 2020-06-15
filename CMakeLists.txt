@@ -47,5 +47,5 @@ catkin_package(
 
 include_directories(include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} ${Eigen3_INCLUDE_DIR})
 
-add_executable(lipm_motion main.cpp lipm.cpp zmpPlanner.cpp dcmPlanner.cpp delayedObserverDCM.cpp RobotParameters.cpp)
+add_executable(lipm_motion main.cpp lipm.cpp zmpPlanner.cpp dcmPlanner.cpp dcmDynamics.cpp RobotParameters.cpp)
 target_link_libraries(lipm_motion ${catkin_LIBRARIES} ${Eigen3_LIBRARIES} ${Boost_LIBRARIES})

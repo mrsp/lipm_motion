@@ -1,6 +1,6 @@
 #include <lipm_motion/dcmPlanner.h>
 
-dcmPlanner::dcmPlanner(RobotParameters &robot_):robot(robot_), dObsDCMx(robot_), dObsDCMy(robot),  CoMBuffer(10 * (int)robot.getWalkParameter(PreviewWindow)), DCMBuffer(10 * (int)robot.getWalkParameter(PreviewWindow)), VRPBuffer(10 * (int)robot.getWalkParameter(PreviewWindow))
+dcmPlanner::dcmPlanner(RobotParameters &robot_):robot(robot_), dynDCMx(robot_), dynDCMy(robot),  CoMBuffer(10 * (int)robot.getWalkParameter(PreviewWindow)), DCMBuffer(10 * (int)robot.getWalkParameter(PreviewWindow)), VRPBuffer(10 * (int)robot.getWalkParameter(PreviewWindow))
 {
     
 
@@ -11,14 +11,13 @@ dcmPlanner::dcmPlanner(RobotParameters &robot_):robot(robot_), dObsDCMx(robot_),
     Cx.resize(3);
 
 
-
     //Embedded Integrator DCM VRP
     A.resize(2,2);
     A.setZero();
     A(0,0) = robot.getWalkParameter(omega);
     A(0,1) = -robot.getWalkParameter(omega);
     A *= robot.getWalkParameter(Ts);
-    A += Matrix2f::Identity();
+    A += Matrix2d::Identity();
     B.resize(2);
     B.setZero();
     B(1) = 1.000;
@@ -41,10 +40,6 @@ dcmPlanner::dcmPlanner(RobotParameters &robot_):robot(robot_), dObsDCMx(robot_),
     Ce(2) = 1.000;
     Cx.setZero();
     Cx(0) = 1.000;
-
-
-
-
 
 	//State is com, dcm, vrp, and ZMP offset
     x.setZero();
@@ -178,18 +173,18 @@ dcmPlanner::dcmPlanner(RobotParameters &robot_):robot(robot_), dObsDCMx(robot_),
 
 }
 
-void dcmPlanner::setState(Vector2f DCM, Vector2f CoM, Vector2f VRP)
+void dcmPlanner::setState(Vector2d DCM, Vector2d CoM, Vector2d VRP)
 {
 
-    dObsDCMx.setState(Vector4f(0,0,0,0));
-    dObsDCMy.setState(Vector4f(0,0,0,0));
+    dynDCMx.setState(Vector3d(CoM(0),DCM(0),VRP(0)));
+    dynDCMy.setState(Vector3d(CoM(1),DCM(1),VRP(1)));
     xe(2) = 0.0;
     ye(2) = 0.0;
 }
 
 
 
-void dcmPlanner::plan(boost::circular_buffer<VectorXd> & VRPRef, Vector2f DCM, Vector2f CoM,  Vector2f VRP)
+void dcmPlanner::plan(boost::circular_buffer<VectorXd> & VRPRef)
 {
 
 
@@ -239,10 +234,10 @@ void dcmPlanner::plan(boost::circular_buffer<VectorXd> & VRPRef, Vector2f DCM, V
 	y_ = y;  
     
 
-	dObsDCMx.update(u_x,VRP(0),CoM(0));
-    dObsDCMy.update(u_y,VRP(1),CoM(1));
-    x =  dObsDCMx.getState();
-    y =  dObsDCMy.getState();
+	dynDCMx.integrate(u_x);
+    dynDCMy.integrate(u_y);
+    x =  dynDCMx.getState();
+    y =  dynDCMy.getState();
     
 	//Desired Gait Pattern Reference
 	comx_d = x(0);
