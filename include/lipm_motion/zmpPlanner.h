@@ -10,7 +10,6 @@
 #include <eigen3/Eigen/Dense>
 #include <eigen3/Eigen/Geometry> 
 
-#define M_PI 3.14159265358979323846264338327950288
 //#include "StepAdjustment.h"
 using namespace Eigen;
 using namespace std;

@@ -3,7 +3,6 @@
 #include "RobotParameters.h"
 #include <eigen3/Eigen/Dense>
 #include <boost/circular_buffer.hpp>
-#include <lipm_motion/KMat.hpp>
 #include <iostream>
 #include <lipm_motion/dcmDynamics.h>
 #define Np 102

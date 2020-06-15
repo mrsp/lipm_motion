@@ -32,7 +32,6 @@ void zmpPlanner::setFeet(VectorXd sl, VectorXd sr)
     startL = sl;
     startR = sr;
     /** Double Support Phase **/
-    //KMath::KMat::GenMatrix<float, 2, 2> rot;
     float meanangle = anglemean(startL(5), startR(5));
     /** planL,planR are the ankle positions, transforming them to Reference ZMP **/
     Rotation2D<double> rotR(startR(5));
