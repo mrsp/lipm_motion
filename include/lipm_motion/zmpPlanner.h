@@ -3,7 +3,6 @@
 
 #include <lipm_motion/KWalkMat.h>
 #include <lipm_motion/motionDefines.h>
-#include <lipm_motion/RobotParameters.h>
 #include <queue>          // std::queue
 #include <boost/circular_buffer.hpp>
 #include <iostream>
@@ -18,9 +17,9 @@ class zmpPlanner
 {
     
 private:
-    RobotParameters &robot;
     WalkInstruction planned;
     KWalkMat interp;
+    double HX, HY, DS_Instructions,  MaxStepX,  MinStepX,  MaxStepY, MinStepY, MaxStepZ;
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     VectorXd start, target, startL, startR, targetR, targetL, footR, footL, ZMPref;
@@ -37,7 +36,8 @@ public:
     void generatePlan();
     void emptyPlan();
     void plan();
-    zmpPlanner(RobotParameters &robot_);
+    void setParams(double HX_, double HY_, int DS_Instructions_, double MaxStepX_, double MinStepX_, double MaxStepY_, double MinStepY_,double StepZ_);
+    zmpPlanner(int bsize);
     //Step Adjustment
     //StepAdjustment sa;
     Vector2d dx, tempV;

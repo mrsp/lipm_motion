@@ -1,6 +1,6 @@
 #include <lipm_motion/zmpPlanner.h>
 
-zmpPlanner::zmpPlanner(RobotParameters &robot_) : robot(robot_), ZMPbuffer(10 * (int)robot.getWalkParameter(PreviewWindow)), footRbuffer(10 * (int)robot.getWalkParameter(PreviewWindow)), footLbuffer(10 * (int)robot.getWalkParameter(PreviewWindow))
+zmpPlanner::zmpPlanner(int bsize) :  ZMPbuffer(bsize), footRbuffer(bsize), footLbuffer(bsize)
 { //sa(robot){
     planAvailable = false;
     start.resize(3);
@@ -15,7 +15,6 @@ zmpPlanner::zmpPlanner(RobotParameters &robot_) : robot(robot_), ZMPbuffer(10 * 
     startR.setZero();
     targetR.resize(6);
     targetR.setZero();
-
     footR.resize(6);
     footR.setZero();
     footL.resize(6);
@@ -27,6 +26,18 @@ zmpPlanner::zmpPlanner(RobotParameters &robot_) : robot(robot_), ZMPbuffer(10 * 
     planned.step_id = -1;
 }
 
+void zmpPlanner::setParams(double HX_, double HY_, int DS_Instructions_, double MaxStepX_, double MinStepX_, double MaxStepY_, double MinStepY_,double MaxStepZ_)
+{
+    HX = HX_;
+    HY = HY_;
+    DS_Instructions = DS_Instructions_;
+    MaxStepX = MaxStepX_;
+    MinStepX = MinStepX_;
+    MaxStepY = MaxStepY_;
+    MinStepY = MinStepY_;
+    MaxStepZ = MaxStepZ_;
+}
+
 void zmpPlanner::setFeet(VectorXd sl, VectorXd sr)
 {
     startL = sl;
@@ -36,13 +47,13 @@ void zmpPlanner::setFeet(VectorXd sl, VectorXd sr)
     /** planL,planR are the ankle positions, transforming them to Reference ZMP **/
     Rotation2D<double> rotR(startR(5));
 
-    Vector2d rr = rotR * Vector2d(-robot.getWalkParameter(HX), -robot.getWalkParameter(HY));
+    Vector2d rr = rotR * Vector2d(-HX, -HY);
     start(0) = rr(0) + startR(0);
     start(1) = rr(1) + startR(1);
 
     Rotation2D<double> rotL(startL(5));
 
-    rr = rotL * Vector2d(-robot.getWalkParameter(HX), robot.getWalkParameter(HY));
+    rr = rotL * Vector2d(-HX, HY);
     start(0) = rr(0) + startL(0);
     start(1) = rr(1) + startL(1);
     start *= 0.5;
@@ -65,7 +76,7 @@ void zmpPlanner::generatePlan()
         /** Add a double support phase in the i instruction **/
         if (!add_DS_instruction)
         {
-            i.steps = robot.getWalkParameter(DS_instructions);
+            i.steps = DS_Instructions;
             i.phase = double_support;
             target = computeDesiredZMP(startL, startR, i);
             footR = startR;
@@ -106,8 +117,8 @@ void zmpPlanner::generatePlan()
 
                 dx = Vector2d(targetR(0) - startL(0), targetR(1) - startL(1));
                 tempV = rotL.inverse() * dx;
-                tempV(0) = cropStep(tempV(0), robot.getWalkParameter(MaxStepX), robot.getWalkParameter(MinStepX));
-                tempV(1) = cropStep(tempV(1), -robot.getWalkParameter(MinStepY), -robot.getWalkParameter(MaxStepY));
+                tempV(0) = cropStep(tempV(0), MaxStepX, MinStepX);
+                tempV(1) = cropStep(tempV(1), -MinStepY, -MaxStepY);
                 tempV = rotL * tempV;
                 targetR(0) = startL(0) + tempV(0);
                 targetR(1) = startL(1) + tempV(1);
@@ -122,7 +133,7 @@ void zmpPlanner::generatePlan()
                     float adiff = anglediff2(targetR(2), startR(2));
                     footR(0) = interp.planFeetTrajectoryXY((float)p, targetR(0), startR(0), i.steps - 1.0);
                     footR(1) = interp.planFeetTrajectoryXY((float)p, targetR(1), startR(1), i.steps - 1.0);
-                    footR(2) = interp.CubicSplineInterpolation((float)p, 0.000, robot.getWalkParameter(StepZ) / 2.0, 1.25 * robot.getWalkParameter(StepZ), robot.getWalkParameter(StepZ) / 3.0, 0.000, i.steps - 1.0);
+                    footR(2) = interp.CubicSplineInterpolation((float)p, 0.000, MaxStepZ / 2.0, 1.25 *MaxStepZ, MaxStepZ / 3.0, 0.000, i.steps - 1.0);
                     footR(3) = 0.0;
                     footR(4) = 0.0;
                     footR(5) = startR(2) + interp.LinearInterpolation((float)p, adiff, 0.0, i.steps - 1.0);
@@ -143,8 +154,8 @@ void zmpPlanner::generatePlan()
                 dx = Vector2d(targetL(0) - startR(0), targetR(1) - startR(1));
                 tempV = rotR.inverse() * dx;
 
-                tempV(0) = cropStep(tempV(0), robot.getWalkParameter(MaxStepX), robot.getWalkParameter(MinStepX));
-                tempV(1) = cropStep(tempV(1),robot.getWalkParameter(MaxStepY),robot.getWalkParameter(MinStepY));
+                tempV(0) = cropStep(tempV(0), MaxStepX, MinStepX);
+                tempV(1) = cropStep(tempV(1), MaxStepY, MinStepY);
 
                 tempV = rotR * tempV;
                 targetL(0) = startR(0) + tempV(0);
@@ -159,7 +170,7 @@ void zmpPlanner::generatePlan()
                     float adiff = anglediff2(targetL(2), startL(2));
                     footL(0) = interp.planFeetTrajectoryXY((float)p, targetL(0), startL(0), i.steps - 1.0);
                     footL(1) = interp.planFeetTrajectoryXY((float)p, targetL(1), startL(1), i.steps - 1.0);
-                    footL(2) = interp.CubicSplineInterpolation((float)p, 0.000, robot.getWalkParameter(StepZ) / 2.0, 1.25 * robot.getWalkParameter(StepZ), robot.getWalkParameter(StepZ) / 3.0, 0.000, i.steps - 1.0);
+                    footL(2) = interp.CubicSplineInterpolation((float)p, 0.000, MaxStepZ / 2.0, 1.25 * MaxStepZ, MaxStepZ / 3.0, 0.000, i.steps - 1.0);
                     footL(3) = 0.0;
                     footL(4) = 0.0;
                     footL(5) = startL(2) + interp.LinearInterpolation((float)p, adiff, 0.0, i.steps - 1.0);
@@ -203,7 +214,7 @@ VectorXd zmpPlanner::computeDesiredZMP(VectorXd sl, VectorXd sr, WalkInstruction
     if (i.targetZMP == SUPPORT_LEG_RIGHT)
     {
         /** Right Support Phase **/
-        Vector2d rr = rotR * Vector2d(-robot.getWalkParameter(HX), robot.getWalkParameter(HY));
+        Vector2d rr = rotR * Vector2d(-HX, HY);
         t(0) = rr(0) + sr(0); //x
         t(1) = rr(1) + sr(1); //y
         t(2) = sr(5);         //theta
@@ -211,7 +222,7 @@ VectorXd zmpPlanner::computeDesiredZMP(VectorXd sl, VectorXd sr, WalkInstruction
     else if (i.targetZMP == SUPPORT_LEG_LEFT)
     {
         /** Left Support Phase **/
-        Vector2d rr = rotL * Vector2d(-robot.getWalkParameter(HX), -robot.getWalkParameter(HY));
+        Vector2d rr = rotL * Vector2d(-HX, -HY);
         t(0) = rr(0) + sl(0);
         t(1) = rr(1) + sl(1);
         t(2) = sl(5);
@@ -219,10 +230,10 @@ VectorXd zmpPlanner::computeDesiredZMP(VectorXd sl, VectorXd sr, WalkInstruction
     else
     {
         /** Double Support Phase **/
-        Vector2d rr = rotL * Vector2d(-robot.getWalkParameter(HX), -robot.getWalkParameter(HY));
+        Vector2d rr = rotL * Vector2d(-HX, -HY);
         t(0) = rr(0) + sl(0);
         t(1) = rr(1) + sl(1);
-        rr = rotR * Vector2d(-robot.getWalkParameter(HX), robot.getWalkParameter(HY));
+        rr = rotR * Vector2d(-HX, HY);
         t(0) += rr(0) + sr(0);
         t(1) += rr(1) + sr(1);
         t *= 0.5;

@@ -1,22 +1,32 @@
 #include <lipm_motion/dcmDynamics.h>
 
-dcmDynamics::dcmDynamics(RobotParameters &robot_):robot(robot_)
+dcmDynamics::dcmDynamics()
 {
     //State is com, dcm, vrp
     x.setZero();
     A.setZero();
     B.setZero();
     I.setIdentity();
-    A(0,0) = -robot.getWalkParameter(omega);
-    A(0,1) = robot.getWalkParameter(omega);
-    A(1,1) = robot.getWalkParameter(omega);
-    A(1,2) = -robot.getWalkParameter(omega);
-    A *= robot.getWalkParameter(Ts);
-    A.noalias() += I;
-    B.setZero();
-    B(2) = 1.000;
-    B *= robot.getWalkParameter(Ts);
 }
+
+void dcmDynamics::init()
+{
+    A(0,0) = -omega;
+    A(0,1) = omega;
+    A(1,1) = omega;
+    A(1,2) = -omega;
+    A *= dt;
+    A.noalias() += I;
+    B(2) = 1.000;
+    B *= dt;
+}
+
+void dcmDynamics::setParams(double omega_, double dt_)
+{
+    omega = omega_;
+    dt = dt_;
+}
+
 
 void dcmDynamics::setState(Vector3d x_)
 {

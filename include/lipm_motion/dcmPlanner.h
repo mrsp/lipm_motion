@@ -1,6 +1,5 @@
 #ifndef __DCMPLANNER_H__
 #define __DCMPLANNER_H__
-#include "RobotParameters.h"
 #include <eigen3/Eigen/Dense>
 #include <boost/circular_buffer.hpp>
 #include <iostream>
@@ -11,8 +10,7 @@ using namespace std;
 class dcmPlanner
 {
     private:
-        RobotParameters &robot;
-        dcmDynamics dynDCMx, dynDCMy;
+        dcmDynamics dcmDynamicsX, dcmDynamicsY;
         double   du_x, du_y, qx, qv, u_x, u_y;
         Vector2d DCM_, VRP_;
  	    Vector3d x,y,x_,y_;
@@ -21,20 +19,21 @@ class dcmPlanner
         VectorXd K_v, VRPRefX, VRPRefY, Cksi,  Ce, Cx, Be, Bd, temp, K_x, B, C;
         bool planAvailable;
         VectorXd DCM_d, CoM_d, VRP_d;
+        double comZ, g, dt, omega;
     public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
         double vrpx_d,comx_d,comdx_d,dcmx_d,dcmdx_d, vrpy_d,comy_d,comdy_d,dcmy_d,dcmdy_d,  comddx_d, comddy_d;
         bool firstrun;
         boost::circular_buffer<VectorXd> DCMBuffer, CoMBuffer, VRPBuffer;
 
-        dcmPlanner(RobotParameters &robot_);
+        dcmPlanner(int bsize);
         
         void setState(Vector2d DCM, Vector2d CoM, Vector2d ZMP);
         
         void plan(boost::circular_buffer<VectorXd> & VRPRef);
         
-        
+        void setParams(double comZ_, double g_, double dt_);
         void emptyPlan();
-        
+        void init();
 };
 #endif

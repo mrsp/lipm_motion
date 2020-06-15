@@ -1,19 +1,39 @@
 #include "lipm_motion/lipm.h"
 
-lipm::lipm(ros::NodeHandle nh_, RobotParameters robot_)
+lipm::lipm(ros::NodeHandle nh_)
 {
     nh = nh_;
-    robot = robot_;
     ros::NodeHandle n_p("~");
     isPlanAvailable = false;
 
-    zp = new zmpPlanner(robot);
-    dp = new dcmPlanner(robot);
+    zp = new zmpPlanner(5000);
+    dp = new dcmPlanner(5000);
     CoM_pub = nh.advertise<nav_msgs::Path>("lipm_motion/CoM", 1000);
     DCM_pub = nh.advertise<nav_msgs::Path>("lipm_motion/DCM", 1000);
     VRP_pub = nh.advertise<nav_msgs::Path>("lipm_motion/VRP", 1000);
     footL_pub = nh.advertise<nav_msgs::Path>("lipm_motion/LLeg", 1000);
     footR_pub = nh.advertise<nav_msgs::Path>("lipm_motion/RLeg", 1000);
+
+    double g, comZ, dt;
+    n_p.param<double>("gravity", g, 9.80665);
+    n_p.param<double>("comZ", comZ, 0.26);
+    n_p.param<double>("dt", dt, 0.01);
+    double MaxStepZ, MaxStepX, MaxStepY, MinStepX, MinStepY, Tss, Tds, HX,HY;
+    n_p.param<double>("MaxStepZ", MaxStepZ, 0.0175);
+    n_p.param<double>("MaxStepX", MaxStepX, 0.05);
+    n_p.param<double>("MaxStepY", MaxStepY, 0.11);
+    n_p.param<double>("MinStepX", MinStepX, -0.02);
+    n_p.param<double>("MinStepY", MinStepY, 0.10);
+    n_p.param<double>("Tss", Tss, 0.3);
+    n_p.param<double>("Tds", Tds, 0.1);
+    n_p.param<double>("HX", HX, 0.0);
+    n_p.param<double>("HY", HY, 0.0);
+
+    SS_Instructions = ceil(Tss/dt);
+    DS_Instructions = ceil(Tds/dt);
+    zp->setParams( HX,  HY,  DS_Instructions,  MaxStepX,  MinStepX,  MaxStepY,  MinStepY, MaxStepZ);
+    dp->setParams(comZ,g,dt);
+    dp->init();
     as_ = new actionlib::SimpleActionServer<lipm_motion::MotionPlanAction>(nh, "lipm_motion/plan", boost::bind(&lipm::desiredFootstepsCb, this, _1), false);
     as_->start();
 }
@@ -49,7 +69,7 @@ void lipm::desiredFootstepsCb(const lipm_motion::MotionPlanGoalConstPtr &goal)
     unsigned int j = 0;
     WalkInstruction i;
     i.target.resize(6);
-    i.steps = 100;
+    i.steps = SS_Instructions;
     feedback_.percent_completed = 0;
     result_.status = 0;
     while (j < goal->footsteps.size())

@@ -1,7 +1,6 @@
 #ifndef __LIPMMOTION_H__
 #define __LIPMMOTION_H__
 #include <ros/ros.h>
-#include <lipm_motion/RobotParameters.h>
 #include <lipm_motion/zmpPlanner.h>
 #include <lipm_motion/dcmPlanner.h>
 #include <iostream>
@@ -14,12 +13,11 @@ class lipm
 private:
     /// ROS nodehanlder
     ros::NodeHandle nh;
-    RobotParameters robot;
     zmpPlanner* zp;
     dcmPlanner* dp;
     bool isPlanAvailable;
     ros::Publisher CoM_pub,DCM_pub,VRP_pub,footL_pub,footR_pub;
-
+    int SS_Instructions, DS_Instructions;
     lipm_motion::MotionPlanResult result_;
     lipm_motion::MotionPlanFeedback feedback_;
 
@@ -28,7 +26,7 @@ public:
     actionlib::SimpleActionServer<lipm_motion::MotionPlanAction> *as_; 
 
     ~lipm();
-    lipm(ros::NodeHandle nh_, RobotParameters robot_);
+    lipm(ros::NodeHandle nh_);
     /** @fn desiredFootstepsCb(const lipm_motion::MotionPlanGoalConstPtr &goal)
      * @brief computes a desired motion plan for CoM/DCM/VRP and legs
      */
