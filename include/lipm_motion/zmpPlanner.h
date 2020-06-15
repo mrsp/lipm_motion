@@ -23,6 +23,7 @@ private:
     WalkInstruction planned;
     KWalkMat interp;
 public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     VectorXd start, target, startL, startR, targetR, targetL, footR, footL, ZMPref;
     /** ZMP Buffer for the Prediction Horizon **/
     boost::circular_buffer<VectorXd> ZMPbuffer,footRbuffer, footLbuffer;

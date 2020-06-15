@@ -24,6 +24,7 @@ private:
     lipm_motion::MotionPlanFeedback feedback_;
 
 public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     actionlib::SimpleActionServer<lipm_motion::MotionPlanAction> *as_; 
 
     ~lipm();

@@ -66,8 +66,6 @@ void zmpPlanner::generatePlan()
         /** Add a double support phase in the i instruction **/
         if (!add_DS_instruction)
         {
-
-
             i.steps = robot.getWalkParameter(DS_instructions);
             i.phase = double_support;
             target = computeDesiredZMP(startL, startR, i);
@@ -184,7 +182,6 @@ void zmpPlanner::generatePlan()
 
     }
      planAvailable = true;
-
 }
 
 void zmpPlanner::plan()
@@ -215,7 +212,6 @@ VectorXd zmpPlanner::computeDesiredZMP(VectorXd sl, VectorXd sr, WalkInstruction
     else if (i.targetZMP == SUPPORT_LEG_LEFT)
     {
         /** Left Support Phase **/
-
         Vector2d rr = rotL * Vector2d(-robot.getWalkParameter(HX), -robot.getWalkParameter(HY));
         t(0) = rr(0) + sl(0);
         t(1) = rr(1) + sl(1);
@@ -276,5 +272,4 @@ void zmpPlanner::emptyPlan()
     footR.setZero();
     footL.setZero();
     ZMPref.setZero();
-
 }
