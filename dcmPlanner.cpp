@@ -83,8 +83,6 @@ dcmPlanner::dcmPlanner(RobotParameters &robot_):robot(robot_), dynDCMx(robot_), 
 
     for (unsigned int i = 2; i < Np; i++)
     {
-  
-
         Fv.block<1,3>(i,0) =  Fv.block<1,3>(i-1,0) * Ae;
 	    tmpb = Fvu.block<1,Np-1>(i-1,0);
         Fvu.block<1,Np-1>(i,1) = tmpb;
@@ -147,11 +145,9 @@ dcmPlanner::dcmPlanner(RobotParameters &robot_):robot(robot_), dynDCMx(robot_), 
     //cout<<"K_v "<<K_v<<endl;
 
     VRPRefX.resize(Np,1);  
-    VRPRefX.setZero();
     VRPRefY.resize(Np,1);  
+    VRPRefX.setZero();
     VRPRefY.setZero();
-    DCM_.setZero();
-
     dcmx_d = 0;
     comx_d = 0;
     comdx_d = 0;
@@ -176,10 +172,19 @@ dcmPlanner::dcmPlanner(RobotParameters &robot_):robot(robot_), dynDCMx(robot_), 
 void dcmPlanner::setState(Vector2d DCM, Vector2d CoM, Vector2d VRP)
 {
 
+    
+    xe(2) = VRP(0);
+    ye(2) = VRP(1);
+    u_x = 0.0;
+    u_y = 0.0;
+    x.setZero();
+    x_.setZero();
+    y.setZero();
+    y_.setZero();
+
+    
     dynDCMx.setState(Vector3d(CoM(0),DCM(0),VRP(0)));
     dynDCMy.setState(Vector3d(CoM(1),DCM(1),VRP(1)));
-    xe(2) = 0.0;
-    ye(2) = 0.0;
 }
 
 
@@ -229,11 +234,9 @@ void dcmPlanner::plan(boost::circular_buffer<VectorXd> & VRPRef)
 	u_y += du_y;
 
 
-	//Observer for MPC 
+	//DCM Linear Dynamics
 	x_ = x;
 	y_ = y;  
-    
-
 	dynDCMx.integrate(u_x);
     dynDCMy.integrate(u_y);
     x =  dynDCMx.getState();
@@ -294,6 +297,9 @@ void dcmPlanner::plan(boost::circular_buffer<VectorXd> & VRPRef)
 
 void dcmPlanner::emptyPlan()
 {
+
+
+
     if(!planAvailable)
         return;
      while (CoMBuffer.size() > 0)

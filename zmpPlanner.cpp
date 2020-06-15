@@ -66,8 +66,7 @@ void zmpPlanner::generatePlan()
         /** Add a double support phase in the i instruction **/
         if (!add_DS_instruction)
         {
-            std::cout << "Planning DS" << std::endl;
-            cout<<"STARTL STARTR "<<startL<<" "<<startR<<endl;
+
 
             i.steps = robot.getWalkParameter(DS_instructions);
             i.phase = double_support;
@@ -96,7 +95,6 @@ void zmpPlanner::generatePlan()
         }
         else
         {
-            std::cout << "Planning SS" << std::endl;
 
             if (i.targetZMP == SUPPORT_LEG_BOTH)
                 i.phase = double_support;
@@ -136,8 +134,7 @@ void zmpPlanner::generatePlan()
                     footLbuffer.push_back(footL);
                     p++;
                 }
-                cout<<"Target R Foot"<<endl;
-                cout<<targetR<<endl;
+            
                 startR= targetR;  
                 stepRQ.push(targetR);
             }
@@ -173,8 +170,7 @@ void zmpPlanner::generatePlan()
                     footLbuffer.push_back(footL);
                     p++;
                 }
-                cout<<"Target LFOOT"<<endl;
-                cout<<targetL<<endl;
+       
                 startL = targetL;
 
                 stepLQ.push(targetL);

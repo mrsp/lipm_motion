@@ -12,26 +12,19 @@ using namespace std;
 class dcmPlanner
 {
     private:
-        
-        
         RobotParameters &robot;
-
-
         dcmDynamics dynDCMx, dynDCMy;
-
-        double    du_x, du_y, qx, qv, u_x, u_y;
+        double   du_x, du_y, qx, qv, u_x, u_y;
         Vector2d DCM_, VRP_;
  	    Vector3d x,y,x_,y_;
         Vector3d xe, ye;
         MatrixXd Fx, Fv, Fxu, Fvu, R, Qx, Qv, K_X, K_V,H , tmpb, H_inv, Ad, Ae, Cd, A, L;
         VectorXd K_v, VRPRefX, VRPRefY, Cksi,  Ce, Cx, Be, Bd, temp, K_x, B, C;
-        
         bool planAvailable;
-        
         VectorXd DCM_d, CoM_d, VRP_d;
     public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-        double vrpx_d,comx_d,vrpy_, vrpx_,comdx_d,dcmx_d,dcmdx_d, vrpy_d,comy_d,comdy_d,dcmy_d,dcmdy_d,  comddx_d, comddy_d;
+        double vrpx_d,comx_d,comdx_d,dcmx_d,dcmdx_d, vrpy_d,comy_d,comdy_d,dcmy_d,dcmdy_d,  comddx_d, comddy_d;
         bool firstrun;
         boost::circular_buffer<VectorXd> DCMBuffer, CoMBuffer, VRPBuffer;
 

@@ -111,6 +111,9 @@ void lipm::desiredFootstepsCb(const lipm_motion::MotionPlanGoalConstPtr &goal)
     DCM.setZero();
     CoM.setZero();
     VRP.setZero();
+
+    dp->setState( DCM,  CoM,  VRP);
+
     dp->plan(zp->ZMPbuffer);
 
 
