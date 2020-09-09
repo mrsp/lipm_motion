@@ -8,11 +8,18 @@ lipm::lipm(ros::NodeHandle nh_)
 
     zp = new zmpPlanner(5000);
     dp = new dcmPlanner(5000);
+    /*
     CoM_pub = nh.advertise<nav_msgs::Path>("lipm_motion/CoM", 1000);
     DCM_pub = nh.advertise<nav_msgs::Path>("lipm_motion/DCM", 1000);
     VRP_pub = nh.advertise<nav_msgs::Path>("lipm_motion/VRP", 1000);
     footL_pub = nh.advertise<nav_msgs::Path>("lipm_motion/LLeg", 1000);
     footR_pub = nh.advertise<nav_msgs::Path>("lipm_motion/RLeg", 1000);
+    */
+    CoM_pub = nh.advertise<lipm_msgs::TrajectoryPoints>("lipm_motion/CoM", 1000);
+    DCM_pub = nh.advertise<lipm_msgs::TrajectoryPoints>("lipm_motion/DCM", 1000);
+    VRP_pub = nh.advertise<lipm_msgs::TrajectoryPoints>("lipm_motion/VRP", 1000);
+    footL_pub = nh.advertise<lipm_msgs::TrajectoryPoints>("lipm_motion/LLeg", 1000);
+    footR_pub = nh.advertise<lipm_msgs::TrajectoryPoints>("lipm_motion/RLeg", 1000);
 
     double g, comZ, dt;
     n_p.param<double>("gravity", g, 9.80665);
@@ -34,11 +41,11 @@ lipm::lipm(ros::NodeHandle nh_)
     zp->setParams( HX,  HY,  DS_Instructions,  MaxStepX,  MinStepX,  MaxStepY,  MinStepY, MaxStepZ);
     dp->setParams(comZ,g,dt);
     dp->init();
-    as_ = new actionlib::SimpleActionServer<lipm_motion::MotionPlanAction>(nh, "lipm_motion/plan", boost::bind(&lipm::desiredFootstepsCb, this, _1), false);
+    as_ = new actionlib::SimpleActionServer<lipm_msgs::MotionPlanAction>(nh, "lipm_motion/plan", boost::bind(&lipm::desiredFootstepsCb, this, _1), false);
     as_->start();
 }
 
-void lipm::desiredFootstepsCb(const lipm_motion::MotionPlanGoalConstPtr &goal)
+void lipm::desiredFootstepsCb(const lipm_msgs::MotionPlanGoalConstPtr &goal)
 {
     std::cout<<"Motion Planning"<<std::endl;
     zp->emptyPlan();
@@ -65,7 +72,6 @@ void lipm::desiredFootstepsCb(const lipm_motion::MotionPlanGoalConstPtr &goal)
     rfoot.head(3) = rpos;
     rfoot.tail(3) = rq.toRotationMatrix().eulerAngles(0, 1, 2);
     zp->setFeet(lfoot, rfoot);
-
     unsigned int j = 0;
     WalkInstruction i;
     i.target.resize(6);
@@ -83,7 +89,6 @@ void lipm::desiredFootstepsCb(const lipm_motion::MotionPlanGoalConstPtr &goal)
             lq.x() = goal->footsteps[j].pose.orientation.x;
             lq.y() = goal->footsteps[j].pose.orientation.y;
             lq.z() = goal->footsteps[j].pose.orientation.z;
-
             i.target.head(3) = lpos;
             i.target.tail(3) = lq.toRotationMatrix().eulerAngles(0, 1, 2);
             i.targetSupport = SUPPORT_LEG_RIGHT;
@@ -139,7 +144,7 @@ void lipm::desiredFootstepsCb(const lipm_motion::MotionPlanGoalConstPtr &goal)
 
 
 
-    lipm_motion::TrajectoryPoints CoM_msg, VRP_msg, DCM_msg, footL_msg, footR_msg;
+    /*
     nav_msgs::Path CoM_path, footL_path, footR_path, DCM_path, VRP_path;
     CoM_path.poses.resize(dp->CoMBuffer.size());
     CoM_path.header.stamp = ros::Time::now();
@@ -158,7 +163,8 @@ void lipm::desiredFootstepsCb(const lipm_motion::MotionPlanGoalConstPtr &goal)
     DCM_path.poses.resize(dp->DCMBuffer.size());
     DCM_path.header.stamp = ros::Time::now();
     DCM_path.header.frame_id = "odom";
-
+    */
+    lipm_msgs::TrajectoryPoints CoM_msg, VRP_msg, DCM_msg, footL_msg, footR_msg;
     CoM_msg.positions.resize(dp->CoMBuffer.size());
     CoM_msg.velocities.resize(dp->CoMBuffer.size());
     CoM_msg.accelerations.resize(dp->CoMBuffer.size());
@@ -184,7 +190,7 @@ void lipm::desiredFootstepsCb(const lipm_motion::MotionPlanGoalConstPtr &goal)
     j = 0;
     while (j < dp->CoMBuffer.size())
     {
-
+        /*
         //Msg for rviz
         CoM_path.poses[j].pose.position.x = dp->CoMBuffer[j](0);
         CoM_path.poses[j].pose.position.y = dp->CoMBuffer[j](1);
@@ -201,6 +207,7 @@ void lipm::desiredFootstepsCb(const lipm_motion::MotionPlanGoalConstPtr &goal)
         footR_path.poses[j].pose.position.x = zp->footRbuffer[j](0);
         footR_path.poses[j].pose.position.y = zp->footRbuffer[j](1);
         footR_path.poses[j].pose.position.z = zp->footRbuffer[j](2);
+        */
         ///Msgs for Control Loop
         ///CoM Position/Velocity/Acceleration
         CoM_msg.positions[j].x = dp->CoMBuffer[j](0);
@@ -228,10 +235,21 @@ void lipm::desiredFootstepsCb(const lipm_motion::MotionPlanGoalConstPtr &goal)
         footL_msg.positions[j].x = zp->footLbuffer[j](0);
         footL_msg.positions[j].y = zp->footLbuffer[j](1);
         footL_msg.positions[j].z = zp->footLbuffer[j](2);
+        q = AngleAxisd(zp->footLbuffer[j](3), Vector3d::UnitX())* AngleAxisd(zp->footLbuffer[j](4), Vector3d::UnitY())* AngleAxisd(zp->footLbuffer[j](5), Vector3d::UnitZ());
+        footL_msg.quaternions[j].x = q.x();
+        footL_msg.quaternions[j].y = q.y();
+        footL_msg.quaternions[j].z = q.z();
+        footL_msg.quaternions[j].w = q.w();
         ///Right Foot Position
         footR_msg.positions[j].x = zp->footRbuffer[j](0);
         footR_msg.positions[j].y = zp->footRbuffer[j](1);
         footR_msg.positions[j].z = zp->footRbuffer[j](2);
+        q = AngleAxisd(zp->footRbuffer[j](3), Vector3d::UnitX())* AngleAxisd(zp->footRbuffer[j](4), Vector3d::UnitY())* AngleAxisd(zp->footRbuffer[j](5), Vector3d::UnitZ());
+        footR_msg.quaternions[j].x = q.x();
+        footR_msg.quaternions[j].y = q.y();
+        footR_msg.quaternions[j].z = q.z();
+        footR_msg.quaternions[j].w = q.w();
+
 
         /*
         dp->CoMBuffer.pop_front();
@@ -245,25 +263,12 @@ void lipm::desiredFootstepsCb(const lipm_motion::MotionPlanGoalConstPtr &goal)
     isPlanAvailable = true;
     result_.status = 1;
     as_->setSucceeded(result_);
-    //publishPath();
-    CoM_pub.publish(CoM_path);
-    DCM_pub.publish(DCM_path);
-    VRP_pub.publish(VRP_path);
-    footL_pub.publish(footL_path);
-    footR_pub.publish(footR_path);
+    CoM_pub.publish(CoM_msg);
+    DCM_pub.publish(DCM_msg);
+    VRP_pub.publish(VRP_msg);
+    footL_pub.publish(footL_msg);
+    footR_pub.publish(footR_msg);
 }
-
-// void lipm::publishPath()
-// {
-//     if (!isPlanAvailable)
-//         return;
-
-//     CoM_pub.publish(CoM_path);
-//     DCM_pub.publish(DCM_path);
-//     VRP_pub.publish(VRP_path);
-//     footL_pub.publish(footL_path);
-//     footR_pub.publish(footR_path);
-// }
 
 lipm::~lipm()
 {
