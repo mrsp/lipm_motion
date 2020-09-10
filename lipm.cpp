@@ -43,6 +43,11 @@ lipm::lipm(ros::NodeHandle nh_)
     dp->init();
     as_ = new actionlib::SimpleActionServer<lipm_msgs::MotionPlanAction>(nh, "lipm_motion/plan", boost::bind(&lipm::desiredFootstepsCb, this, _1), false);
     as_->start();
+
+    ac_ = new actionlib::SimpleActionClient<lipm_msgs::MotionControlAction>("lipm_control/plan", true);
+    ac_->waitForServer();
+    std::cout<<"LIPM Motion Planning Initialized"<<std::endl;
+
 }
 
 void lipm::desiredFootstepsCb(const lipm_msgs::MotionPlanGoalConstPtr &goal)
@@ -78,6 +83,7 @@ void lipm::desiredFootstepsCb(const lipm_msgs::MotionPlanGoalConstPtr &goal)
     i.steps = SS_Instructions;
     feedback_.percent_completed = 0;
     result_.status = 0;
+
     while (j < goal->footsteps.size())
     {
         if (goal->footsteps[j].leg == 0)
@@ -129,9 +135,9 @@ void lipm::desiredFootstepsCb(const lipm_msgs::MotionPlanGoalConstPtr &goal)
         feedback_.percent_completed = j/goal->footsteps.size();
         as_->publishFeedback(feedback_);
     }
-
     
     zp->plan();
+
     Vector2d DCM, CoM, VRP;
     DCM.setZero();
     CoM.setZero();
@@ -168,15 +174,12 @@ void lipm::desiredFootstepsCb(const lipm_msgs::MotionPlanGoalConstPtr &goal)
     CoM_msg.positions.resize(dp->CoMBuffer.size());
     CoM_msg.velocities.resize(dp->CoMBuffer.size());
     CoM_msg.accelerations.resize(dp->CoMBuffer.size());
-    CoM_msg.header.stamp = ros::Time::now();
     CoM_msg.header.frame_id = "odom";
     VRP_msg.positions.resize(dp->VRPBuffer.size());
-    VRP_msg.header.stamp = ros::Time::now();
     VRP_msg.header.frame_id = "odom";
 
     DCM_msg.positions.resize(dp->DCMBuffer.size());
     DCM_msg.velocities.resize(dp->DCMBuffer.size());
-    DCM_msg.header.stamp = ros::Time::now();
     DCM_msg.header.frame_id = "odom";
 
     footL_msg.positions.resize(zp->footLbuffer.size());
@@ -190,6 +193,7 @@ void lipm::desiredFootstepsCb(const lipm_msgs::MotionPlanGoalConstPtr &goal)
     j = 0;
     while (j < dp->CoMBuffer.size())
     {
+
         /*
         //Msg for rviz
         CoM_path.poses[j].pose.position.x = dp->CoMBuffer[j](0);
@@ -224,6 +228,7 @@ void lipm::desiredFootstepsCb(const lipm_msgs::MotionPlanGoalConstPtr &goal)
         VRP_msg.positions[j].x = dp->VRPBuffer[j](0);
         VRP_msg.positions[j].y = dp->VRPBuffer[j](1);
         VRP_msg.positions[j].z = dp->VRPBuffer[j](2);
+
         ///DCM Position/Velocity
         DCM_msg.positions[j].x = dp->DCMBuffer[j](0);
         DCM_msg.positions[j].y = dp->DCMBuffer[j](1);
@@ -231,24 +236,25 @@ void lipm::desiredFootstepsCb(const lipm_msgs::MotionPlanGoalConstPtr &goal)
         DCM_msg.velocities[j].x = dp->DCMBuffer[j](3);
         DCM_msg.velocities[j].y = dp->DCMBuffer[j](4);
         DCM_msg.velocities[j].z = dp->DCMBuffer[j](5);
+
         ///Left Foot Position
         footL_msg.positions[j].x = zp->footLbuffer[j](0);
         footL_msg.positions[j].y = zp->footLbuffer[j](1);
         footL_msg.positions[j].z = zp->footLbuffer[j](2);
-        q = AngleAxisd(zp->footLbuffer[j](3), Vector3d::UnitX())* AngleAxisd(zp->footLbuffer[j](4), Vector3d::UnitY())* AngleAxisd(zp->footLbuffer[j](5), Vector3d::UnitZ());
-        footL_msg.quaternions[j].x = q.x();
-        footL_msg.quaternions[j].y = q.y();
-        footL_msg.quaternions[j].z = q.z();
-        footL_msg.quaternions[j].w = q.w();
+        //q = AngleAxisd(zp->footLbuffer[j](3), Vector3d::UnitX())* AngleAxisd(zp->footLbuffer[j](4), Vector3d::UnitY())* AngleAxisd(zp->footLbuffer[j](5), Vector3d::UnitZ());
+        // footL_msg.quaternions[j].x = q.x();
+        // footL_msg.quaternions[j].y = q.y();
+        // footL_msg.quaternions[j].z = q.z();
+        // footL_msg.quaternions[j].w = q.w();
         ///Right Foot Position
         footR_msg.positions[j].x = zp->footRbuffer[j](0);
         footR_msg.positions[j].y = zp->footRbuffer[j](1);
         footR_msg.positions[j].z = zp->footRbuffer[j](2);
-        q = AngleAxisd(zp->footRbuffer[j](3), Vector3d::UnitX())* AngleAxisd(zp->footRbuffer[j](4), Vector3d::UnitY())* AngleAxisd(zp->footRbuffer[j](5), Vector3d::UnitZ());
-        footR_msg.quaternions[j].x = q.x();
-        footR_msg.quaternions[j].y = q.y();
-        footR_msg.quaternions[j].z = q.z();
-        footR_msg.quaternions[j].w = q.w();
+        //q = AngleAxisd(zp->footRbuffer[j](3), Vector3d::UnitX())* AngleAxisd(zp->footRbuffer[j](4), Vector3d::UnitY())* AngleAxisd(zp->footRbuffer[j](5), Vector3d::UnitZ());
+        // footR_msg.quaternions[j].x = q.x();
+        // footR_msg.quaternions[j].y = q.y();
+        // footR_msg.quaternions[j].z = q.z();
+        // footR_msg.quaternions[j].w = q.w();
 
 
         /*
@@ -263,11 +269,23 @@ void lipm::desiredFootstepsCb(const lipm_msgs::MotionPlanGoalConstPtr &goal)
     isPlanAvailable = true;
     result_.status = 1;
     as_->setSucceeded(result_);
+    CoM_msg.header.stamp = ros::Time::now();
     CoM_pub.publish(CoM_msg);
+    DCM_msg.header.stamp = ros::Time::now();
     DCM_pub.publish(DCM_msg);
+    VRP_msg.header.stamp = ros::Time::now();
     VRP_pub.publish(VRP_msg);
+    footL_msg.header.stamp = ros::Time::now();
     footL_pub.publish(footL_msg);
+    footR_msg.header.stamp = ros::Time::now();
     footR_pub.publish(footR_msg);
+    TrajectoryGoal.CoM = CoM_msg;
+    TrajectoryGoal.DCM = DCM_msg;
+    TrajectoryGoal.VRP = VRP_msg;
+    TrajectoryGoal.LLeg = footL_msg;
+    TrajectoryGoal.RLeg = footR_msg;
+    ac_->sendGoal(TrajectoryGoal);
+    std::cout<<"Motion Plan Completed"<<std::endl;
 }
 
 lipm::~lipm()

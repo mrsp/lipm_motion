@@ -7,7 +7,10 @@
 #include <lipm_msgs/TrajectoryPoints.h>
 #include <nav_msgs/Path.h>
 #include <actionlib/server/simple_action_server.h>
+#include <actionlib/client/simple_action_client.h>
 #include <lipm_msgs/MotionPlanAction.h>
+#include <lipm_msgs/MotionControlAction.h>
+
 class lipm
 {
 private:
@@ -21,9 +24,11 @@ private:
     lipm_msgs::MotionPlanResult result_;
     lipm_msgs::MotionPlanFeedback feedback_;
     Quaterniond q;
+    lipm_msgs::MotionControlGoal TrajectoryGoal;
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     actionlib::SimpleActionServer<lipm_msgs::MotionPlanAction> *as_; 
+    actionlib::SimpleActionClient<lipm_msgs::MotionControlAction> *ac_;
 
     ~lipm();
     lipm(ros::NodeHandle nh_);
