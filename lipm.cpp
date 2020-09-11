@@ -24,7 +24,7 @@ lipm::lipm(ros::NodeHandle nh_)
     double g, comZ, dt;
     n_p.param<double>("gravity", g, 9.80665);
     n_p.param<double>("comZ", comZ, 0.26);
-    n_p.param<double>("dt", dt, 0.01);
+    n_p.param<double>("dt", dt, 0.2);
     double MaxStepZ, MaxStepX, MaxStepY, MinStepX, MinStepY, Tss, Tds, HX,HY;
     n_p.param<double>("MaxStepZ", MaxStepZ, 0.0175);
     n_p.param<double>("MaxStepX", MaxStepX, 0.05);
