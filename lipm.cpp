@@ -21,17 +21,17 @@ lipm::lipm(ros::NodeHandle nh_)
     footL_pub = nh.advertise<lipm_msgs::TrajectoryPoints>("lipm_motion/LLeg", 1000);
     footR_pub = nh.advertise<lipm_msgs::TrajectoryPoints>("lipm_motion/RLeg", 1000);
 
-    double g, comZ, dt;
+    double dt;
     n_p.param<double>("gravity", g, 9.80665);
-    n_p.param<double>("comZ", comZ, 0.26);
-    n_p.param<double>("dt", dt, 0.2);
+    n_p.param<double>("comZ", comZ, 0.858);
+    n_p.param<double>("dt", dt, 0.02);
     double MaxStepZ, MaxStepX, MaxStepY, MinStepX, MinStepY, Tss, Tds, HX,HY;
-    n_p.param<double>("MaxStepZ", MaxStepZ, 0.0175);
+    n_p.param<double>("MaxStepZ", MaxStepZ, 0.03);
     n_p.param<double>("MaxStepX", MaxStepX, 0.05);
     n_p.param<double>("MaxStepY", MaxStepY, 0.11);
     n_p.param<double>("MinStepX", MinStepX, -0.02);
     n_p.param<double>("MinStepY", MinStepY, 0.10);
-    n_p.param<double>("Tss", Tss, 0.3);
+    n_p.param<double>("Tss", Tss, 0.5);
     n_p.param<double>("Tds", Tds, 0.1);
     n_p.param<double>("HX", HX, 0.0);
     n_p.param<double>("HY", HY, 0.0);
@@ -49,6 +49,8 @@ lipm::lipm(ros::NodeHandle nh_)
     std::cout<<"LIPM Motion Planning Initialized"<<std::endl;
 
 }
+
+
 
 void lipm::desiredFootstepsCb(const lipm_msgs::MotionPlanGoalConstPtr &goal)
 {
@@ -142,6 +144,12 @@ void lipm::desiredFootstepsCb(const lipm_msgs::MotionPlanGoalConstPtr &goal)
     DCM.setZero();
     CoM.setZero();
     VRP.setZero();
+    CoM(0) = goal->CoM.pose.pose.position.x;
+    CoM(1) = goal->CoM.pose.pose.position.y;
+    VRP(0) = goal->COP.x;
+    VRP(1) = goal->COP.y;
+    DCM(0) = goal->CoM.pose.pose.position.x + 1/sqrt(g/comZ) * goal->CoM.twist.twist.linear.x;
+    DCM(1) = goal->CoM.pose.pose.position.y + 1/sqrt(g/comZ) * goal->CoM.twist.twist.linear.y;
 
     dp->setState( DCM,  CoM,  VRP);
 

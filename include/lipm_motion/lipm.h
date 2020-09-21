@@ -25,6 +25,7 @@ private:
     lipm_msgs::MotionPlanFeedback feedback_;
     Quaterniond q;
     lipm_msgs::MotionControlGoal TrajectoryGoal;
+    double g, comZ;
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     actionlib::SimpleActionServer<lipm_msgs::MotionPlanAction> *as_; 
