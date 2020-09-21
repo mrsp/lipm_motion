@@ -13,19 +13,19 @@ actionlib
 lipm_msgs
 )
 
-find_package(Eigen3)
+find_package(Eigen3 REQUIRED)
 find_package(Boost REQUIRED)
 
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES lipm_motion
   CATKIN_DEPENDS roscpp std_msgs nav_msgs geometry_msgs  lipm_msgs
-  DEPENDS Eigen3 Boost
+  DEPENDS EIGEN3 Boost
 )
 
 
-include_directories(include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} ${Eigen3_INCLUDE_DIR})
+include_directories(include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIR})
 
 add_executable(lipm_motion_node main.cpp lipm.cpp zmpPlanner.cpp dcmPlanner.cpp dcmDynamics.cpp)
 add_dependencies(lipm_motion_node ${catkin_EXPORTED_TARGETS})
-target_link_libraries(lipm_motion_node ${catkin_LIBRARIES} ${Eigen3_LIBRARIES} ${Boost_LIBRARIES})
+target_link_libraries(lipm_motion_node ${catkin_LIBRARIES} ${EIGEN3_LIBRARIES} ${Boost_LIBRARIES})
