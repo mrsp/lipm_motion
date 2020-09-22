@@ -31,8 +31,8 @@ lipm::lipm(ros::NodeHandle nh_)
     n_p.param<double>("MaxStepY", MaxStepY, 0.11);
     n_p.param<double>("MinStepX", MinStepX, -0.02);
     n_p.param<double>("MinStepY", MinStepY, 0.10);
-    n_p.param<double>("Tss", Tss, 0.5);
-    n_p.param<double>("Tds", Tds, 0.1);
+    n_p.param<double>("Tss", Tss, 3.0);
+    n_p.param<double>("Tds", Tds, 1.0);
     n_p.param<double>("HX", HX, 0.0);
     n_p.param<double>("HY", HY, 0.0);
 
