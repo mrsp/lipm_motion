@@ -6,15 +6,9 @@ lipm::lipm(ros::NodeHandle nh_)
     ros::NodeHandle n_p("~");
     isPlanAvailable = false;
 
-    zp = new zmpPlanner(5000);
-    dp = new dcmPlanner(5000);
-    /*
-    CoM_pub = nh.advertise<nav_msgs::Path>("lipm_motion/CoM", 1000);
-    DCM_pub = nh.advertise<nav_msgs::Path>("lipm_motion/DCM", 1000);
-    VRP_pub = nh.advertise<nav_msgs::Path>("lipm_motion/VRP", 1000);
-    footL_pub = nh.advertise<nav_msgs::Path>("lipm_motion/LLeg", 1000);
-    footR_pub = nh.advertise<nav_msgs::Path>("lipm_motion/RLeg", 1000);
-    */
+    zp = new zmpPlanner(15000);
+    dp = new dcmPlanner(15000);
+   
     CoM_pub = nh.advertise<lipm_msgs::TrajectoryPoints>("lipm_motion/CoM", 1000);
     DCM_pub = nh.advertise<lipm_msgs::TrajectoryPoints>("lipm_motion/DCM", 1000);
     VRP_pub = nh.advertise<lipm_msgs::TrajectoryPoints>("lipm_motion/VRP", 1000);
@@ -23,19 +17,27 @@ lipm::lipm(ros::NodeHandle nh_)
 
     double dt;
     n_p.param<double>("gravity", g, 9.80665);
-    n_p.param<double>("comZ", comZ, 0.858);
+    n_p.param<double>("comZ", comZ, 0.879533781657);
     n_p.param<double>("dt", dt, 0.02);
     double MaxStepZ, MaxStepX, MaxStepY, MinStepX, MinStepY, Tss, Tds, HX,HY;
     n_p.param<double>("MaxStepZ", MaxStepZ, 0.03);
     n_p.param<double>("MaxStepX", MaxStepX, 0.05);
-    n_p.param<double>("MaxStepY", MaxStepY, 0.11);
+    n_p.param<double>("MaxStepY", MaxStepY, 0.20);
     n_p.param<double>("MinStepX", MinStepX, -0.02);
-    n_p.param<double>("MinStepY", MinStepY, 0.10);
+    n_p.param<double>("MinStepY", MinStepY, 0.172);
     n_p.param<double>("Tss", Tss, 3.0);
     n_p.param<double>("Tds", Tds, 1.0);
-    n_p.param<double>("HX", HX, 0.0);
+    n_p.param<double>("HX", HX, -0.025);
     n_p.param<double>("HY", HY, 0.0);
-
+    n_p.param<bool>("debug",debug,true);
+    if(debug)
+    {
+        CoM_path_pub = nh.advertise<nav_msgs::Path>("lipm_motion/CoM/path", 1000);
+        DCM_path_pub = nh.advertise<nav_msgs::Path>("lipm_motion/DCM/path", 1000);
+        VRP_path_pub = nh.advertise<nav_msgs::Path>("lipm_motion/VRP/path", 1000);
+        footL_path_pub = nh.advertise<nav_msgs::Path>("lipm_motion/LLeg/path", 1000);
+        footR_path_pub = nh.advertise<nav_msgs::Path>("lipm_motion/RLeg/path", 1000);
+    }
     SS_Instructions = ceil(Tss/dt);
     DS_Instructions = ceil(Tds/dt);
     zp->setParams( HX,  HY,  DS_Instructions,  MaxStepX,  MinStepX,  MaxStepY,  MinStepY, MaxStepZ);
@@ -158,26 +160,26 @@ void lipm::desiredFootstepsCb(const lipm_msgs::MotionPlanGoalConstPtr &goal)
 
 
 
-    /*
-    nav_msgs::Path CoM_path, footL_path, footR_path, DCM_path, VRP_path;
-    CoM_path.poses.resize(dp->CoMBuffer.size());
-    CoM_path.header.stamp = ros::Time::now();
-    CoM_path.header.frame_id = "odom";
+    if(debug)
+    {    
+        CoM_path.poses.resize(dp->CoMBuffer.size());
+        CoM_path.header.stamp = ros::Time::now();
+        CoM_path.header.frame_id = "odom";
 
-    footL_path.poses.resize(zp->footLbuffer.size());
-    footL_path.header.stamp = ros::Time::now();
-    footL_path.header.frame_id = "odom";
-    footR_path.poses.resize(zp->footRbuffer.size());
-    footR_path.header.stamp = ros::Time::now();
-    footR_path.header.frame_id = "odom";
+        footL_path.poses.resize(zp->footLbuffer.size());
+        footL_path.header.stamp = ros::Time::now();
+        footL_path.header.frame_id = "odom";
+        footR_path.poses.resize(zp->footRbuffer.size());
+        footR_path.header.stamp = ros::Time::now();
+        footR_path.header.frame_id = "odom";
 
-    VRP_path.poses.resize(dp->VRPBuffer.size());
-    VRP_path.header.stamp = ros::Time::now();
-    VRP_path.header.frame_id = "odom";
-    DCM_path.poses.resize(dp->DCMBuffer.size());
-    DCM_path.header.stamp = ros::Time::now();
-    DCM_path.header.frame_id = "odom";
-    */
+        VRP_path.poses.resize(dp->VRPBuffer.size());
+        VRP_path.header.stamp = ros::Time::now();
+        VRP_path.header.frame_id = "odom";
+        DCM_path.poses.resize(dp->DCMBuffer.size());
+        DCM_path.header.stamp = ros::Time::now();
+        DCM_path.header.frame_id = "odom";
+    }
     lipm_msgs::TrajectoryPoints CoM_msg, VRP_msg, DCM_msg, footL_msg, footR_msg;
     CoM_msg.positions.resize(dp->CoMBuffer.size());
     CoM_msg.velocities.resize(dp->CoMBuffer.size());
@@ -202,24 +204,25 @@ void lipm::desiredFootstepsCb(const lipm_msgs::MotionPlanGoalConstPtr &goal)
     while (j < dp->CoMBuffer.size())
     {
 
-        /*
         //Msg for rviz
-        CoM_path.poses[j].pose.position.x = dp->CoMBuffer[j](0);
-        CoM_path.poses[j].pose.position.y = dp->CoMBuffer[j](1);
-        CoM_path.poses[j].pose.position.z = dp->CoMBuffer[j](2);
-        VRP_path.poses[j].pose.position.x = dp->VRPBuffer[j](0);
-        VRP_path.poses[j].pose.position.y = dp->VRPBuffer[j](1);
-        VRP_path.poses[j].pose.position.z = dp->VRPBuffer[j](2);
-        DCM_path.poses[j].pose.position.x = dp->DCMBuffer[j](0);
-        DCM_path.poses[j].pose.position.y = dp->DCMBuffer[j](1);
-        DCM_path.poses[j].pose.position.z = dp->DCMBuffer[j](2);
-        footL_path.poses[j].pose.position.x = zp->footLbuffer[j](0);
-        footL_path.poses[j].pose.position.y = zp->footLbuffer[j](1);
-        footL_path.poses[j].pose.position.z = zp->footLbuffer[j](2);
-        footR_path.poses[j].pose.position.x = zp->footRbuffer[j](0);
-        footR_path.poses[j].pose.position.y = zp->footRbuffer[j](1);
-        footR_path.poses[j].pose.position.z = zp->footRbuffer[j](2);
-        */
+        if(debug)
+        {
+            CoM_path.poses[j].pose.position.x = dp->CoMBuffer[j](0);
+            CoM_path.poses[j].pose.position.y = dp->CoMBuffer[j](1);
+            CoM_path.poses[j].pose.position.z = dp->CoMBuffer[j](2);
+            VRP_path.poses[j].pose.position.x = dp->VRPBuffer[j](0);
+            VRP_path.poses[j].pose.position.y = dp->VRPBuffer[j](1);
+            VRP_path.poses[j].pose.position.z = dp->VRPBuffer[j](2);
+            DCM_path.poses[j].pose.position.x = dp->DCMBuffer[j](0);
+            DCM_path.poses[j].pose.position.y = dp->DCMBuffer[j](1);
+            DCM_path.poses[j].pose.position.z = dp->DCMBuffer[j](2);
+            footL_path.poses[j].pose.position.x = zp->footLbuffer[j](0);
+            footL_path.poses[j].pose.position.y = zp->footLbuffer[j](1);
+            footL_path.poses[j].pose.position.z = zp->footLbuffer[j](2);
+            footR_path.poses[j].pose.position.x = zp->footRbuffer[j](0);
+            footR_path.poses[j].pose.position.y = zp->footRbuffer[j](1);
+            footR_path.poses[j].pose.position.z = zp->footRbuffer[j](2);
+        }
         ///Msgs for Control Loop
         ///CoM Position/Velocity/Acceleration
         CoM_msg.positions[j].x = dp->CoMBuffer[j](0);
@@ -274,6 +277,26 @@ void lipm::desiredFootstepsCb(const lipm_msgs::MotionPlanGoalConstPtr &goal)
         */
         j++;
     }
+
+
+    if(debug)
+    {
+        CoM_path.header.stamp = ros::Time::now();
+        CoM_path_pub.publish(CoM_path);
+        VRP_path.header.stamp = ros::Time::now();
+        VRP_path_pub.publish(VRP_path);
+        DCM_path.header.stamp = ros::Time::now();
+        DCM_path_pub.publish(DCM_path);
+        footL_path.header.stamp = ros::Time::now();
+        footL_path_pub.publish(footL_path);
+        footR_path.header.stamp = ros::Time::now();
+        footR_path_pub.publish(footR_path);
+    }
+
+
+
+
+
     isPlanAvailable = true;
     result_.status = 1;
     as_->setSucceeded(result_);

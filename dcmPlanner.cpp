@@ -137,10 +137,10 @@ void dcmPlanner::init()
 
 
     R.setIdentity();
-    R*=1.0e-3;
+    R*=1.0e-4;
 
-    qx = 0.05;
-    qv = 0.02;
+    qx = 0.001;
+    qv = 0.0001;
 
    
     Qv.setIdentity();

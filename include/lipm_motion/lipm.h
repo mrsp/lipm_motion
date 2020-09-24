@@ -18,8 +18,12 @@ private:
     ros::NodeHandle nh;
     zmpPlanner* zp;
     dcmPlanner* dp;
+    bool debug;
     bool isPlanAvailable;
     ros::Publisher CoM_pub,DCM_pub,VRP_pub,footL_pub,footR_pub;
+    ros::Publisher CoM_path_pub,DCM_path_pub,VRP_path_pub,footL_path_pub,footR_path_pub;
+    nav_msgs::Path CoM_path, footL_path, footR_path, DCM_path, VRP_path;
+
     int SS_Instructions, DS_Instructions;
     lipm_msgs::MotionPlanResult result_;
     lipm_msgs::MotionPlanFeedback feedback_;
