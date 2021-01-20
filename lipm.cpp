@@ -111,7 +111,7 @@ void lipm::desiredFootstepsCb(const lipm_msgs::MotionPlanGoalConstPtr &goal)
                 i.targetZMP = SUPPORT_LEG_RIGHT;
             }
         }
-        else
+        else if (goal->footsteps[j].leg == 1)
         {
             rpos(0) = goal->footsteps[j].pose.position.x;
             rpos(1) = goal->footsteps[j].pose.position.y;
@@ -132,6 +132,12 @@ void lipm::desiredFootstepsCb(const lipm_msgs::MotionPlanGoalConstPtr &goal)
             {
                 i.targetZMP = SUPPORT_LEG_LEFT;
             }
+        }
+        else
+        {
+            i.targetZMP = SUPPORT_LEG_BOTH;
+            i.steps = 1000;
+
         }
         i.step_id = j;
         zp->stepAnkleQ.push(i);

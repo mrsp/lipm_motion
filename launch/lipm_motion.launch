@@ -1,0 +1,4 @@
+<launch>
+	<node pkg = "lipm_motion"  type = "lipm_motion_node"  name = "lipm_motion" output = "screen" respawn = "false"/>
+	<node pkg = "rviz" type = "rviz" respawn = "false" name = "rviz" output = "screen" args ="-d $(find lipm_motion)/share/lipm_motion.rviz"> </node>
+</launch>
