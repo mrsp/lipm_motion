@@ -1,50 +1,50 @@
 #ifndef __LIPMMOTION_H__
 #define __LIPMMOTION_H__
-#include <ros/ros.h>
 #include <lipm_motion/zmpPlanner.h>
-#include <lipm_motion/dcmPlanner.h>
+#include <lipm_motion/LIPMPlanner.h>
+//#include <lipm_motion/dcmPlanner.h>
+
 #include <iostream>
-#include <lipm_msgs/TrajectoryPoints.h>
-#include <nav_msgs/Path.h>
-#include <actionlib/server/simple_action_server.h>
-#include <actionlib/client/simple_action_client.h>
-#include <lipm_msgs/MotionPlanAction.h>
-#include <lipm_msgs/MotionControlAction.h>
+
+struct DesiredStepTarget
+{
+    Vector3d position;
+    Quaterniond orientation;
+    uint leg; //support leg - 0 is right, 1 is left
+};
+
+struct MotionPlanTarget
+{
+    Vector3d lfoot_position;
+    Quaterniond lfoot_orientation;
+    Vector3d rfoot_position;
+    Quaterniond rfoot_orientation;
+    Vector3d CoM_position;
+    Vector3d CoM_velocity;
+    Vector3d COP;
+    std::vector<DesiredStepTarget> footsteps;
+};
+
+
 
 class lipm
 {
 private:
-    /// ROS nodehanlder
-    ros::NodeHandle nh;
     zmpPlanner* zp;
-    dcmPlanner* dp;
-    bool debug;
-    bool isPlanAvailable;
-    ros::Publisher CoM_pub,DCM_pub,VRP_pub,footL_pub,footR_pub;
-    ros::Publisher CoM_path_pub,DCM_path_pub,VRP_path_pub,footL_path_pub,footR_path_pub;
-    nav_msgs::Path CoM_path, footL_path, footR_path, DCM_path, VRP_path;
+    LIPMPlanner* dp;
+    //dcmPlanner* dp;
 
     int SS_Instructions, DS_Instructions;
-    lipm_msgs::MotionPlanResult result_;
-    lipm_msgs::MotionPlanFeedback feedback_;
     Quaterniond q;
-    lipm_msgs::MotionControlGoal TrajectoryGoal;
-    double g, comZ;
+    double g, h, MaxStepX, MaxStepY, MinStepX, MinStepY, MaxStepZ;
+    double dt, HX, HY, Tss, Tds;
 public:
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-    actionlib::SimpleActionServer<lipm_msgs::MotionPlanAction> *as_; 
-    actionlib::SimpleActionClient<lipm_msgs::MotionControlAction> *ac_;
+    bool isPlanAvailable;
 
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     ~lipm();
-    lipm(ros::NodeHandle nh_);
-    /** @fn desiredFootstepsCb(const lipm_motion::MotionPlanGoalConstPtr &goal)
-     * @brief computes a desired motion plan for CoM/DCM/VRP and legs
-     */
-    void desiredFootstepsCb(const lipm_msgs::MotionPlanGoalConstPtr &goal);
-    /** @fn void publishPath()
-     *  @brief publish the computed desired motion
-     */
-  
-    void publishPath();
+    lipm();
+    void desiredFootstepsCb(MotionPlanTarget* goal, boost::circular_buffer<VectorXd>& ZMPdBuffer, boost::circular_buffer<VectorXd>& DCMBuffer, boost::circular_buffer<VectorXd>& CoMBuffer, 
+        boost::circular_buffer<VectorXd>& ZMPBuffer, boost::circular_buffer<VectorXd>& footLBuffer, boost::circular_buffer<VectorXd>& footRBuffer);
 };
 #endif

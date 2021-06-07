@@ -115,8 +115,8 @@ void dcmPlanner::init()
     temp = Be;
     Fvu(0,0) = Ce.transpose()*Be;
     Fxu(0,0) = Cx.transpose()*Be;
-    Fvu(0,1) = Ce.transpose()*Ae*temp;
-    Fxu(0,1) = Cx.transpose()*Ae*temp;
+    Fvu(1,0) = Ce.transpose()*Ae*temp;
+    Fxu(1,0) = Cx.transpose()*Ae*temp;
     Fvu(1,1) = Ce.transpose()*Be;
     Fxu(1,1) = Cx.transpose()*Be;
 
@@ -137,10 +137,11 @@ void dcmPlanner::init()
 
 
     R.setIdentity();
-    R*=1.0e-4;
+    //R*=5.0e-7;
+    R*=1.0e-8;
 
-    qx = 0.001;
-    qv = 0.0001;
+    qx = 0.0001;
+    qv = 0.001;
 
    
     Qv.setIdentity();
@@ -300,9 +301,6 @@ void dcmPlanner::plan(boost::circular_buffer<VectorXd> & VRPRef)
 
 void dcmPlanner::emptyPlan()
 {
-
-
-
     if(!planAvailable)
         return;
      while (CoMBuffer.size() > 0)

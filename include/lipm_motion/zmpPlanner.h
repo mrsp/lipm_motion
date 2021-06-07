@@ -33,9 +33,8 @@ public:
     //Methods
     void setFeet(VectorXd  sl, VectorXd sr);
     VectorXd computeDesiredZMP(VectorXd sl, VectorXd sr, WalkInstruction i);
-    void generatePlan();
     void emptyPlan();
-    void plan();
+    void plan(Vector2d COP, VectorXd lf, VectorXd rf);
     void setParams(double HX_, double HY_, int DS_Instructions_, double MaxStepX_, double MinStepX_, double MaxStepY_, double MinStepY_,double StepZ_);
     zmpPlanner(int bsize);
     //Step Adjustment
