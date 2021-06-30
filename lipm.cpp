@@ -114,7 +114,7 @@ void lipm::desiredFootstepsCb(MotionPlanTarget *goal, boost::circular_buffer<Vec
     dp->plan(zp->ZMPbuffer);
     DCMBuffer = dp->DCMBuffer;
     CoMBuffer = dp->CoMBuffer;
-    ZMPdBuffer = dp->ZMPBuffer;
+    ZMPdBuffer = dp->VRPBuffer;
     //ZMPdBuffer = dp->VRPBuffer;
 
     footLBuffer = zp->footLbuffer;

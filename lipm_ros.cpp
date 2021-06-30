@@ -7,8 +7,9 @@ lipm_ros::lipm_ros(ros::NodeHandle nh_)
     isPlanAvailable = false;
 
     zp = new zmpPlanner(15000);
-    dp = new dcmPlanner(15000);
-   
+    //dp = new dcmPlanner(15000);
+    dp = new LIPMPlanner(15000);
+
     CoM_pub = nh.advertise<lipm_msgs::TrajectoryPoints>("lipm_motion/CoM", 1000);
     DCM_pub = nh.advertise<lipm_msgs::TrajectoryPoints>("lipm_motion/DCM", 1000);
     VRP_pub = nh.advertise<lipm_msgs::TrajectoryPoints>("lipm_motion/VRP", 1000);
@@ -30,6 +31,21 @@ lipm_ros::lipm_ros(ros::NodeHandle nh_)
     n_p.param<double>("HX", HX, -0.025);
     n_p.param<double>("HY", HY, 0.0);
     n_p.param<bool>("debug",debug,true);
+    
+    comZ = 0.26818;
+    g = 9.80665;
+    dt = 0.01;
+    MaxStepX = 0.2;
+    MinStepX = -0.1;
+    MinStepY = 0.3;
+    MinStepY = 0.2;
+    MaxStepZ = 0.02;
+    Tss = 0.5;
+    Tds = 0.15;
+    HX = 0;
+    HY = 0;
+
+    
     if(debug)
     {
         CoM_path_pub = nh.advertise<nav_msgs::Path>("lipm_motion/CoM/path", 1000);
@@ -46,8 +62,8 @@ lipm_ros::lipm_ros(ros::NodeHandle nh_)
     as_ = new actionlib::SimpleActionServer<lipm_msgs::MotionPlanAction>(nh, "lipm_motion/plan", boost::bind(&lipm_ros::desiredFootstepsCb, this, _1), false);
     as_->start();
 
-    ac_ = new actionlib::SimpleActionClient<lipm_msgs::MotionControlAction>("lipm_control/plan", true);
-    ac_->waitForServer();
+    // ac_ = new actionlib::SimpleActionClient<lipm_msgs::MotionControlAction>("lipm_control/plan", true);
+    // ac_->waitForServer();
     std::cout<<"LIPM Motion Planning Initialized"<<std::endl;
 
 }
@@ -60,8 +76,10 @@ void lipm_ros::desiredFootstepsCb(const lipm_msgs::MotionPlanGoalConstPtr &goal)
     zp->emptyPlan();
     dp->emptyPlan();
 
+    Quaterniond q;
     Vector3d lpos;
     lpos << goal->lfoot.position.x, goal->lfoot.position.y, goal->lfoot.position.z;
+    
     Quaterniond lq(goal->lfoot.orientation.w, goal->lfoot.orientation.x, goal->lfoot.orientation.y, goal->lfoot.orientation.z);
 
     Vector3d rpos;
@@ -87,81 +105,157 @@ void lipm_ros::desiredFootstepsCb(const lipm_msgs::MotionPlanGoalConstPtr &goal)
     feedback_.percent_completed = 0;
     result_.status = 0;
 
+    // while (j < goal->footsteps.size())
+    // {
+    //     if (goal->footsteps[j].leg == 0)
+    //     {
+    //         lpos(0) = goal->footsteps[j].pose.position.x;
+    //         lpos(1) = goal->footsteps[j].pose.position.y;
+    //         lpos(2) = goal->footsteps[j].pose.position.z;
+    //         lq.w() = goal->footsteps[j].pose.orientation.w;
+    //         lq.x() = goal->footsteps[j].pose.orientation.x;
+    //         lq.y() = goal->footsteps[j].pose.orientation.y;
+    //         lq.z() = goal->footsteps[j].pose.orientation.z;
+    //         i.target.head(3) = lpos;
+    //         i.target.tail(3) = lq.toRotationMatrix().eulerAngles(0, 1, 2);
+    //         i.targetSupport = SUPPORT_LEG_RIGHT;
+    //         if (j == goal->footsteps.size() - 1)
+    //         {
+    //             i.targetZMP = SUPPORT_LEG_BOTH;
+    //         }
+    //         else
+    //         {
+    //             i.targetZMP = SUPPORT_LEG_RIGHT;
+    //         }
+    //     }
+    //     else if (goal->footsteps[j].leg == 1)
+    //     {
+    //         rpos(0) = goal->footsteps[j].pose.position.x;
+    //         rpos(1) = goal->footsteps[j].pose.position.y;
+    //         rpos(2) = goal->footsteps[j].pose.position.z;
+    //         rq.w() = goal->footsteps[j].pose.orientation.w;
+    //         rq.x() = goal->footsteps[j].pose.orientation.x;
+    //         rq.y() = goal->footsteps[j].pose.orientation.y;
+    //         rq.z() = goal->footsteps[j].pose.orientation.z;
+
+    //         i.target.head(3) = rpos;
+    //         i.target.tail(3) = rq.toRotationMatrix().eulerAngles(0, 1, 2);
+    //         i.targetSupport = SUPPORT_LEG_LEFT;
+    //         if (j == goal->footsteps.size() - 1)
+    //         {
+    //             i.targetZMP = SUPPORT_LEG_BOTH;
+    //         }
+    //         else
+    //         {
+    //             i.targetZMP = SUPPORT_LEG_LEFT;
+    //         }
+    //     }
+    //     else
+    //     {
+    //         i.targetZMP = SUPPORT_LEG_BOTH;
+    //         i.steps = 1000;
+
+    //     }
+    //     i.step_id = j;
+    //     zp->stepAnkleQ.push(i);
+    //     j++;
+    //     feedback_.percent_completed = j/goal->footsteps.size();
+    //     as_->publishFeedback(feedback_);
+    // }
+    
+
+
+
+
     while (j < goal->footsteps.size())
     {
-        if (goal->footsteps[j].leg == 0)
-        {
-            lpos(0) = goal->footsteps[j].pose.position.x;
-            lpos(1) = goal->footsteps[j].pose.position.y;
-            lpos(2) = goal->footsteps[j].pose.position.z;
-            lq.w() = goal->footsteps[j].pose.orientation.w;
-            lq.x() = goal->footsteps[j].pose.orientation.x;
-            lq.y() = goal->footsteps[j].pose.orientation.y;
-            lq.z() = goal->footsteps[j].pose.orientation.z;
-            i.target.head(3) = lpos;
-            i.target.tail(3) = lq.toRotationMatrix().eulerAngles(0, 1, 2);
-            i.targetSupport = SUPPORT_LEG_RIGHT;
-            if (j == goal->footsteps.size() - 1)
-            {
-                i.targetZMP = SUPPORT_LEG_BOTH;
-            }
-            else
-            {
-                i.targetZMP = SUPPORT_LEG_RIGHT;
-            }
-        }
-        else if (goal->footsteps[j].leg == 1)
-        {
-            rpos(0) = goal->footsteps[j].pose.position.x;
-            rpos(1) = goal->footsteps[j].pose.position.y;
-            rpos(2) = goal->footsteps[j].pose.position.z;
-            rq.w() = goal->footsteps[j].pose.orientation.w;
-            rq.x() = goal->footsteps[j].pose.orientation.x;
-            rq.y() = goal->footsteps[j].pose.orientation.y;
-            rq.z() = goal->footsteps[j].pose.orientation.z;
+        i.target.head(3) = Vector3d(goal->footsteps[j].pose.position.x, goal->footsteps[j].pose.position.y, goal->footsteps[j].pose.position.z);
+            q.w() = goal->footsteps[j].pose.orientation.w;
+            q.x() = goal->footsteps[j].pose.orientation.x;
+            q.y() = goal->footsteps[j].pose.orientation.y;
+            q.z() = goal->footsteps[j].pose.orientation.z;
 
-            i.target.head(3) = rpos;
-            i.target.tail(3) = rq.toRotationMatrix().eulerAngles(0, 1, 2);
-            i.targetSupport = SUPPORT_LEG_LEFT;
-            if (j == goal->footsteps.size() - 1)
+        i.target.tail(3) = q.toRotationMatrix().eulerAngles(0, 1, 2);
+        if (goal->footsteps[j].leg == 0) //Swing LLeg
+        {
+            i.targetSupport = SUPPORT_LEG_RIGHT;
+            i.targetZMP = SUPPORT_LEG_RIGHT;
+            zp->stepAnkleQ.push(i);
+            if (j == goal->footsteps.size() -1)
             {
                 i.targetZMP = SUPPORT_LEG_BOTH;
+                zp->stepAnkleQ.push(i);
             }
-            else
+
+        }
+        else if (goal->footsteps[j].leg == 1) //Swing RLeg
+        {
+            i.targetSupport = SUPPORT_LEG_LEFT;
+            i.targetZMP = SUPPORT_LEG_LEFT;
+            zp->stepAnkleQ.push(i);
+            if (j == goal->footsteps.size() -1)
             {
-                i.targetZMP = SUPPORT_LEG_LEFT;
+                i.targetZMP = SUPPORT_LEG_BOTH;
+                zp->stepAnkleQ.push(i);
             }
+       
+
         }
         else
         {
-            i.targetZMP = SUPPORT_LEG_BOTH;
-            i.steps = 1000;
-
+            cout<<"Invalid Step"<<endl;
         }
         i.step_id = j;
-        zp->stepAnkleQ.push(i);
-        j++;
         feedback_.percent_completed = j/goal->footsteps.size();
         as_->publishFeedback(feedback_);
+
+        j++;
+
+
     }
-    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     zp->plan(Vector2d(goal->COP.x,goal->COP.y), lfoot , rfoot);
 
-    Vector2d DCM, CoM, VRP;
+    Vector2d DCM, dCoM, CoM, VRP;
     DCM.setZero();
     CoM.setZero();
     VRP.setZero();
     CoM(0) = goal->CoM.pose.pose.position.x;
     CoM(1) = goal->CoM.pose.pose.position.y;
+    dCoM(0) = goal->CoM.twist.twist.linear.x;
+    dCoM(1) = goal->CoM.twist.twist.linear.y;
     VRP(0) = goal->COP.x;
     VRP(1) = goal->COP.y;
     DCM(0) = goal->CoM.pose.pose.position.x + 1/sqrt(g/comZ) * goal->CoM.twist.twist.linear.x;
     DCM(1) = goal->CoM.pose.pose.position.y + 1/sqrt(g/comZ) * goal->CoM.twist.twist.linear.y;
 
-    dp->setState( DCM,  CoM,  VRP);
-
+    zp->plan(Vector2d(goal->COP.x,goal->COP.y), lfoot, rfoot);
+    dp->setState(CoM, dCoM, VRP);
+    //dp->setState(DCM,CoM,VRP);
+    boost::circular_buffer<VectorXd> ZMPdBuffer = zp->ZMPbuffer;
     dp->plan(zp->ZMPbuffer);
-
+    isPlanAvailable = true;
+    std::cout << "Motion Plan Completed" << std::endl;
 
 
 
@@ -218,6 +312,10 @@ void lipm_ros::desiredFootstepsCb(const lipm_msgs::MotionPlanGoalConstPtr &goal)
             VRP_path.poses[j].pose.position.x = dp->VRPBuffer[j](0);
             VRP_path.poses[j].pose.position.y = dp->VRPBuffer[j](1);
             VRP_path.poses[j].pose.position.z = dp->VRPBuffer[j](2);
+            // VRP_path.poses[j].pose.position.x = ZMPdBuffer[j](0);
+            // VRP_path.poses[j].pose.position.y = ZMPdBuffer[j](1);
+            // VRP_path.poses[j].pose.position.z = ZMPdBuffer[j](2);
+
             DCM_path.poses[j].pose.position.x = dp->DCMBuffer[j](0);
             DCM_path.poses[j].pose.position.y = dp->DCMBuffer[j](1);
             DCM_path.poses[j].pose.position.z = dp->DCMBuffer[j](2);
@@ -320,7 +418,7 @@ void lipm_ros::desiredFootstepsCb(const lipm_msgs::MotionPlanGoalConstPtr &goal)
     TrajectoryGoal.VRP = VRP_msg;
     TrajectoryGoal.LLeg = footL_msg;
     TrajectoryGoal.RLeg = footR_msg;
-    ac_->sendGoal(TrajectoryGoal);
+    //ac_->sendGoal(TrajectoryGoal);
     std::cout<<"Motion Plan Completed"<<std::endl;
 }
 

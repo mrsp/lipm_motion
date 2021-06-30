@@ -1,6 +1,6 @@
 #include <lipm_motion/LIPMPlanner.h>
 
-LIPMPlanner::LIPMPlanner(int bsize):  CoMBuffer(bsize), DCMBuffer(bsize), ZMPBuffer(bsize)
+LIPMPlanner::LIPMPlanner(int bsize):  CoMBuffer(bsize), DCMBuffer(bsize), VRPBuffer(bsize)
 {
 
     A.setZero();
@@ -93,9 +93,9 @@ void LIPMPlanner::init()
 
     R.setIdentity();
     //R*=5.0e-7;
-    R*=1.0e-8;
+    R*=1.0e-6;
 
-    qv = 1;
+    qv = 0.1;
     Qv.setIdentity();
     Qv = Qv*qv;
 
@@ -216,7 +216,7 @@ void LIPMPlanner::plan(boost::circular_buffer<VectorXd> & ZMPRef)
 
     CoMBuffer.push_back(CoM_d);
     DCMBuffer.push_back(DCM_d);
-    ZMPBuffer.push_back(ZMP_d);
+    VRPBuffer.push_back(ZMP_d);
 
     ZMPRef.pop_front();
 
@@ -234,6 +234,6 @@ void LIPMPlanner::emptyPlan()
      while (DCMBuffer.size() > 0)
         DCMBuffer.pop_front();
     
-     while (ZMPBuffer.size() > 0)
-        ZMPBuffer.pop_front();
+     while (VRPBuffer.size() > 0)
+        VRPBuffer.pop_front();
 }

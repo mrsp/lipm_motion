@@ -28,9 +28,14 @@ catkin_package(
 
 
 
+
 include_directories(include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIR})
 
-add_executable(lipm_motion_node main.cpp  lipm_ros.cpp zmpPlanner.cpp dcmPlanner.cpp dcmDynamics.cpp)
+add_library(lipm_motion main.cpp  lipm_ros.cpp zmpPlanner.cpp dcmPlanner.cpp dcmDynamics.cpp)
+add_dependencies(lipm_motion ${catkin_EXPORTED_TARGETS})
+target_link_libraries(lipm_motion ${catkin_LIBRARIES} ${EIGEN3_LIBRARIES} ${Boost_LIBRARIES})
+
+add_executable(lipm_motion_node main.cpp  lipm_ros.cpp zmpPlanner.cpp dcmPlanner.cpp dcmDynamics.cpp LIPMPlanner.cpp LIPMDynamics.cpp)
 add_dependencies(lipm_motion_node ${catkin_EXPORTED_TARGETS})
 
 

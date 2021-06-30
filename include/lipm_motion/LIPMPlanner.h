@@ -25,7 +25,7 @@ class LIPMPlanner
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
         double ZMPx_d,comx_d,comdx_d,dcmx_d,dcmdx_d, ZMPy_d,comy_d,comdy_d,dcmy_d,dcmdy_d,  comddx_d, comddy_d;
         bool firstrun;
-        boost::circular_buffer<VectorXd> DCMBuffer, CoMBuffer, ZMPBuffer;
+        boost::circular_buffer<VectorXd> DCMBuffer, CoMBuffer, VRPBuffer;
 
         LIPMPlanner(int bsize);
         

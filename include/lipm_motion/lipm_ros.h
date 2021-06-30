@@ -2,7 +2,9 @@
 #define __LIPMMOTIONROS_H__
 #include <ros/ros.h>
 #include <lipm_motion/zmpPlanner.h>
-#include <lipm_motion/dcmPlanner.h>
+//#include <lipm_motion/dcmPlanner.h>
+#include <lipm_motion/LIPMPlanner.h>
+
 #include <iostream>
 #include <lipm_msgs/TrajectoryPoints.h>
 #include <nav_msgs/Path.h>
@@ -17,7 +19,9 @@ private:
     /// ROS nodehanlder
     ros::NodeHandle nh;
     zmpPlanner* zp;
-    dcmPlanner* dp;
+    //dcmPlanner* dp;
+    LIPMPlanner* dp;
+
     bool debug;
     bool isPlanAvailable;
     ros::Publisher CoM_pub,DCM_pub,VRP_pub,footL_pub,footR_pub;
