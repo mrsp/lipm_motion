@@ -62,8 +62,8 @@ lipm_ros::lipm_ros(ros::NodeHandle nh_)
     as_ = new actionlib::SimpleActionServer<lipm_msgs::MotionPlanAction>(nh, "lipm_motion/plan", boost::bind(&lipm_ros::desiredFootstepsCb, this, _1), false);
     as_->start();
 
-    // ac_ = new actionlib::SimpleActionClient<lipm_msgs::MotionControlAction>("lipm_control/plan", true);
-    // ac_->waitForServer();
+    ac_ = new actionlib::SimpleActionClient<lipm_msgs::MotionControlAction>("lipm_control/plan", true);
+    ac_->waitForServer();
     std::cout<<"LIPM Motion Planning Initialized"<<std::endl;
 
 }
@@ -418,7 +418,7 @@ void lipm_ros::desiredFootstepsCb(const lipm_msgs::MotionPlanGoalConstPtr &goal)
     TrajectoryGoal.VRP = VRP_msg;
     TrajectoryGoal.LLeg = footL_msg;
     TrajectoryGoal.RLeg = footR_msg;
-    //ac_->sendGoal(TrajectoryGoal);
+    ac_->sendGoal(TrajectoryGoal);
     std::cout<<"Motion Plan Completed"<<std::endl;
 }
 
