@@ -2,10 +2,10 @@
     hc: 0.26818
     gravity: 9.80665
     dt: 0.01
-    MaxStepX: 0.2
-    MinStepX: -0.1
-    MinStepY: 0.3
-    MinStepY: 0.2
+    MaxStepX: 0.05
+    MinStepX: -0.025
+    MaxStepY: 0.1025
+    MinStepY: 0.1025
     MaxStepZ: 0.02
     Tss: 0.5
     Tds: 0.15
