@@ -119,23 +119,23 @@ void zmpPlanner::plan(Vector2d actual_COP, VectorXd actual_footL, VectorXd actua
 
             targetR = i.target;
             // Check for Kinematic Bounds on steps
-            Quaterniond startqL = Quaterniond(startL(3), startL(4),  startL(5),  startL(6));
-            Rotation2D<double> rotL(startqL.toRotationMatrix().eulerAngles(0,1,2)(2));
+            // Quaterniond startqL = Quaterniond(startL(3), startL(4),  startL(5),  startL(6));
+            // Rotation2D<double> rotL(startqL.toRotationMatrix().eulerAngles(0,1,2)(2));
 
-            dx = Vector2d(targetR(0) - startL(0), targetR(1) - startL(1));
-            //tempV = rotL.inverse() * dx;
-            tempV =  dx;
+            // dx = Vector2d(targetR(0) - startL(0), targetR(1) - startL(1));
+            // //tempV = rotL.inverse() * dx;
+            // tempV =  dx;
 
-            tempV(0) = cropStep(tempV(0), MaxStepX, MinStepX);
-            tempV(1) = cropStep(tempV(1), -MinStepY, -MaxStepY);
-            //tempV = rotL * tempV;
+            // tempV(0) = cropStep(tempV(0), MaxStepX, MinStepX);
+            // tempV(1) = cropStep(tempV(1), -MinStepY, -MaxStepY);
+            // //tempV = rotL * tempV;
 
-            cout<<"Target R before Crop "<<targetR.transpose()<<endl;
+            // cout<<"Target R before Crop "<<targetR.transpose()<<endl;
 
-            targetR(0) = startL(0) + tempV(0);
-            targetR(1) = startL(1) + tempV(1);
+            // targetR(0) = startL(0) + tempV(0);
+            // targetR(1) = startL(1) + tempV(1);
 
-            cout<<"Target R after Crop "<<targetR.transpose()<<endl;
+            // cout<<"Target R after Crop "<<targetR.transpose()<<endl;
 
 
 
@@ -194,20 +194,20 @@ void zmpPlanner::plan(Vector2d actual_COP, VectorXd actual_footL, VectorXd actua
 
             // Check for Kinematic Bounds on steps
             targetL = i.target;
-            Quaterniond startqR = Quaterniond(startR(3), startR(4),  startR(5),  startR(6));
+            // Quaterniond startqR = Quaterniond(startR(3), startR(4),  startR(5),  startR(6));
 
-            Rotation2D<double> rotR(startqR.toRotationMatrix().eulerAngles(0,1,2)(2));
-            dx = Vector2d(targetL(0) - startR(0), targetL(1) - startR(1));
-            //tempV = rotR.inverse() * dx;
-            tempV = dx;
-            tempV(0) = cropStep(tempV(0), MaxStepX, MinStepX);
-            tempV(1) = cropStep(tempV(1), MaxStepY, MinStepY);
+            // Rotation2D<double> rotR(startqR.toRotationMatrix().eulerAngles(0,1,2)(2));
+            // dx = Vector2d(targetL(0) - startR(0), targetL(1) - startR(1));
+            // //tempV = rotR.inverse() * dx;
+            // tempV = dx;
+            // tempV(0) = cropStep(tempV(0), MaxStepX, MinStepX);
+            // tempV(1) = cropStep(tempV(1), MaxStepY, MinStepY);
 
-            //tempV = rotR * tempV;
-            cout<<"Target L before Crop "<<targetL.transpose()<<endl;
-            targetL(0) = startR(0) + tempV(0);
-            targetL(1) = startR(1) + tempV(1);
-            cout<<"Target L after Crop "<<targetL.transpose()<<endl;
+            // //tempV = rotR * tempV;
+            // cout<<"Target L before Crop "<<targetL.transpose()<<endl;
+            // targetL(0) = startR(0) + tempV(0);
+            // targetL(1) = startR(1) + tempV(1);
+            // cout<<"Target L after Crop "<<targetL.transpose()<<endl;
 
 
             Quaterniond startqL = Quaterniond(startL(3), startL(4),  startL(5),  startL(6));

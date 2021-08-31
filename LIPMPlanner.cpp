@@ -92,10 +92,9 @@ void LIPMPlanner::init()
 
 
     R.setIdentity();
-    //R*=5.0e-7;
     R*=1.0e-6;
 
-    qv = 0.1;
+    qv = 0.05;
     Qv.setIdentity();
     Qv = Qv*qv;
 

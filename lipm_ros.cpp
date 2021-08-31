@@ -35,7 +35,7 @@ lipm_ros::lipm_ros(ros::NodeHandle nh_)
     n_p.param<double>("HX", HX, -0.025);
     n_p.param<double>("HY", HY, 0.0);
     n_p.param<bool>("debug", debug, true);
-
+    cout<<"HX "<<HX<<endl;
     if (debug)
     {
         CoM_path_pub = nh.advertise<nav_msgs::Path>("lipm_motion/CoM/path", 1000);
@@ -53,7 +53,7 @@ lipm_ros::lipm_ros(ros::NodeHandle nh_)
     as_->start();
 
     ac_ = new actionlib::SimpleActionClient<lipm_msgs::MotionControlAction>("lipm_control/plan", true);
-    ac_->waitForServer();
+    //ac_->waitForServer();
     std::cout << "LIPM Motion Planning Initialized" << std::endl;
 }
 
