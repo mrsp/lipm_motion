@@ -18,9 +18,6 @@ lipm_ros::lipm_ros(ros::NodeHandle nh_)
 
     double dt;
 
-
-
-
     n_p.param<double>("gravity", g, 9.80665);
     n_p.param<double>("hc", comZ, 0.268);
     n_p.param<double>("dt", dt, 0.01);
@@ -46,7 +43,7 @@ lipm_ros::lipm_ros(ros::NodeHandle nh_)
     }
     SS_Instructions = ceil(Tss / dt);
     DS_Instructions = ceil(Tds / dt);
-    zp->setParams(HX, HY, DS_Instructions, MaxStepX, MinStepX, MaxStepY, MinStepY, MaxStepZ);
+    zp->setParams(HX, HY, DS_Instructions, MaxStepX, MinStepX, MaxStepY, MinStepY, MaxStepZ, dt);
     dp->setParams(comZ, g, dt);
     dp->init();
     as_ = new actionlib::SimpleActionServer<lipm_msgs::MotionPlanAction>(nh, "lipm_motion/plan", boost::bind(&lipm_ros::desiredFootstepsCb, this, _1), false);
@@ -76,20 +73,29 @@ void lipm_ros::desiredFootstepsCb(const lipm_msgs::MotionPlanGoalConstPtr &goal)
     Quaterniond rq(goal->rfoot.orientation.w, goal->rfoot.orientation.x, goal->rfoot.orientation.y, goal->rfoot.orientation.z);
 
     VectorXd rfoot;
-    rfoot.resize(7);
+    rfoot.resize(13);
     rfoot.setZero();
     VectorXd lfoot;
-    lfoot.resize(7);
+    lfoot.resize(13);
     lfoot.setZero();
 
     //Initial Foot Poses
     lfoot.head(3) = lpos;
-    lfoot.tail(4) = Vector4d(lq.w(), lq.x(), lq.y(), lq.z());
+    lfoot(3) = lq.w();
+    lfoot(4) = lq.x();
+    lfoot(5) = lq.y();
+    lfoot(6) = lq.z();
+
     rfoot.head(3) = rpos;
-    rfoot.tail(4) = Vector4d(rq.w(), rq.x(), rq.y(), rq.z());
+    rfoot(3) = rq.w();
+    rfoot(4) = rq.x();
+    rfoot(5) = rq.y();
+    rfoot(6) = rq.z();
+
+
     unsigned int j = 0;
     WalkInstruction i;
-    i.target.resize(7);
+    i.target.resize(13);
     i.steps = SS_Instructions;
     feedback_.percent_completed = 0;
     result_.status = 0;
@@ -102,7 +108,11 @@ void lipm_ros::desiredFootstepsCb(const lipm_msgs::MotionPlanGoalConstPtr &goal)
         q.y() = goal->footsteps[j].pose.orientation.y;
         q.z() = goal->footsteps[j].pose.orientation.z;
 
-        i.target.tail(4) = Vector4d(q.w(), q.x(), q.y(), q.z());
+        i.target(3) = q.w();
+        i.target(4) = q.x();
+        i.target(5) = q.y();
+        i.target(6) = q.z();
+
         if (goal->footsteps[j].leg == 0) //Swing LLeg
         {
             i.targetSupport = SUPPORT_LEG_RIGHT;
@@ -135,6 +145,8 @@ void lipm_ros::desiredFootstepsCb(const lipm_msgs::MotionPlanGoalConstPtr &goal)
 
         j++;
     }
+
+
     Vector2d DCM, dCoM, CoM, VRP;
     DCM.setZero();
     CoM.setZero();
@@ -190,11 +202,15 @@ void lipm_ros::desiredFootstepsCb(const lipm_msgs::MotionPlanGoalConstPtr &goal)
 
     footL_msg.positions.resize(zp->footLbuffer.size());
     footL_msg.orientations.resize(zp->footLbuffer.size());
+    footL_msg.linear_velocities.resize(zp->footLbuffer.size());
+    footL_msg.angular_velocities.resize(zp->footLbuffer.size());
     footL_msg.header.stamp = ros::Time::now();
     footL_msg.header.frame_id = "odom";
 
     footR_msg.positions.resize(zp->footRbuffer.size());
     footR_msg.orientations.resize(zp->footRbuffer.size());
+    footR_msg.linear_velocities.resize(zp->footRbuffer.size());
+    footR_msg.angular_velocities.resize(zp->footRbuffer.size());
     footR_msg.header.stamp = ros::Time::now();
     footR_msg.header.frame_id = "odom";
 
@@ -259,6 +275,17 @@ void lipm_ros::desiredFootstepsCb(const lipm_msgs::MotionPlanGoalConstPtr &goal)
         footL_msg.orientations[j].x = zp->footLbuffer[j](4);
         footL_msg.orientations[j].y = zp->footLbuffer[j](5);
         footL_msg.orientations[j].z = zp->footLbuffer[j](6);
+
+        footL_msg.linear_velocities[j].x = zp->footLbuffer[j](7);
+        footL_msg.linear_velocities[j].y = zp->footLbuffer[j](8);
+        footL_msg.linear_velocities[j].z = zp->footLbuffer[j](9);
+
+        footL_msg.angular_velocities[j].x = zp->footLbuffer[j](10);
+        footL_msg.angular_velocities[j].y = zp->footLbuffer[j](11);
+        footL_msg.angular_velocities[j].z = zp->footLbuffer[j](12);
+
+
+
         ///Right Foot Position
         footR_msg.positions[j].x = zp->footRbuffer[j](0);
         footR_msg.positions[j].y = zp->footRbuffer[j](1);
@@ -267,6 +294,16 @@ void lipm_ros::desiredFootstepsCb(const lipm_msgs::MotionPlanGoalConstPtr &goal)
         footR_msg.orientations[j].x = zp->footRbuffer[j](4);
         footR_msg.orientations[j].y = zp->footRbuffer[j](5);
         footR_msg.orientations[j].z = zp->footRbuffer[j](6);
+        
+        footR_msg.linear_velocities[j].x = zp->footRbuffer[j](7);
+        footR_msg.linear_velocities[j].y = zp->footRbuffer[j](8);
+        footR_msg.linear_velocities[j].z = zp->footRbuffer[j](9);
+
+        footR_msg.angular_velocities[j].x = zp->footRbuffer[j](10);
+        footR_msg.angular_velocities[j].y = zp->footRbuffer[j](11);
+        footR_msg.angular_velocities[j].z = zp->footRbuffer[j](12);
+
+
 
         /*
         dp->CoMBuffer.pop_front();

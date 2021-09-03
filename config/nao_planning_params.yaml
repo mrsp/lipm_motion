@@ -9,6 +9,6 @@
     MaxStepZ: 0.02
     Tss: 0.35
     Tds: 0.15
-    HX: -0.015
+    HX: 0.000
     HY: 0.000
     debug: True

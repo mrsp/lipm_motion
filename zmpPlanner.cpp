@@ -7,26 +7,41 @@ zmpPlanner::zmpPlanner(int bsize) : ZMPbuffer(bsize), footRbuffer(bsize), footLb
     start.setZero();
     target.resize(3);
     target.setZero();
-    startL.resize(7);
+
+    startL.resize(13);
     startL.setZero();
-    targetL.resize(7);
+    targetL.resize(13);
     targetL.setZero();
-    startR.resize(7);
+    
+    startR.resize(13);
     startR.setZero();
-    targetR.resize(7);
+    targetR.resize(13);
     targetR.setZero();
-    footR.resize(7);
+    
+    footR.resize(13);
     footR.setZero();
-    footL.resize(7);
+    footL.resize(13);
     footL.setZero();
+    
+    footR_.resize(13);
+    footR_.setZero();
+    footL_.resize(13);
+    footL_.setZero();
+    
     ZMPref.resize(3);
     ZMPref.setZero();
+
+    v.resize(3);
+    v.setZero();
+    omega.resize(3);
+    omega.setZero();
+    
     planned.targetZMP = SUPPORT_LEG_NONE;
     planned.targetSupport = SUPPORT_LEG_NONE;
     planned.step_id = -1;
 }
 
-void zmpPlanner::setParams(double HX_, double HY_, int DS_Instructions_, double MaxStepX_, double MinStepX_, double MaxStepY_, double MinStepY_, double MaxStepZ_)
+void zmpPlanner::setParams(double HX_, double HY_, int DS_Instructions_, double MaxStepX_, double MinStepX_, double MaxStepY_, double MinStepY_, double MaxStepZ_, double dt_)
 {
     HX = HX_;
     HY = HY_;
@@ -36,6 +51,7 @@ void zmpPlanner::setParams(double HX_, double HY_, int DS_Instructions_, double 
     MaxStepY = MaxStepY_;
     MinStepY = MinStepY_;
     MaxStepZ = MaxStepZ_;
+    dt = dt_;
 }
 
 void zmpPlanner::setFeet(VectorXd sl, VectorXd sr)
@@ -153,11 +169,35 @@ void zmpPlanner::plan(Vector2d actual_COP, VectorXd actual_footL, VectorXd actua
                 footR(1) = interp.planFeetTrajectoryXY((float)p, targetR(1), startR(1), i.steps - 1.0);
                 footR(2) = interp.CubicSplineInterpolation((float)p, startR(2), startR(2) + MaxStepZ / 2.0, startR(2) + MaxStepZ, targetR(2) + MaxStepZ / 3.0, targetR(2), i.steps - 1.0);
                 
-                Quaterniond qR = startqR.slerp( (float) p/(i.steps-1.0), targetqR);
+                qR = startqR.slerp( (float) p/(i.steps-1.0), targetqR);
                 footR(3) = qR.w();
                 footR(4) = qR.x();
                 footR(5) = qR.y();
                 footR(6) = qR.z();
+
+                //Compute Desired Right Leg Velocity
+                if(p==0)
+                {
+                    v = (footR.head(3) - targetR.head(3))/dt;
+                    omega = logMap( (targetqR.inverse()*qR).toRotationMatrix() )/dt;
+                }
+                else
+                {
+                    v = (footR.head(3) - footR_.head(3))/dt;
+                    omega = logMap( (qR_.inverse()*qR).toRotationMatrix() )/dt;
+                }
+
+
+                footR(7) = v(0);
+                footR(8) = v(1);
+                footR(9) = v(2);
+
+                footR(10) = omega(0);
+                footR(11) = omega(1);
+                footR(12) = omega(2);
+
+                footR_ = footR;
+                qR_ = qR;
 
                 footRbuffer.push_back(footR);
                 footLbuffer.push_back(footL);
@@ -224,11 +264,36 @@ void zmpPlanner::plan(Vector2d actual_COP, VectorXd actual_footL, VectorXd actua
                 footL(1) = interp.planFeetTrajectoryXY((float)p, targetL(1), startL(1), i.steps - 1.0);
                 footL(2) = interp.CubicSplineInterpolation((float)p, startL(2), startL(2) + MaxStepZ / 2.0, startL(2) + MaxStepZ, targetL(2) + MaxStepZ / 3.0, targetL(2), i.steps - 1.0);
             
-                Quaterniond qL = startqL.slerp( (float) p/(i.steps-1.0), targetqL);
+                qL = startqL.slerp( (float) p/(i.steps-1.0), targetqL);
                 footL(3) = qL.w();
                 footL(4) = qL.x();
                 footL(5) = qL.y();
                 footL(6) = qL.z();
+
+                //Compute Desired Right Leg Velocity
+                if(p==0)
+                {
+                    v = (footL.head(3) - targetL.head(3))/dt;
+                    omega = logMap( (targetqL.inverse()*qL).toRotationMatrix() )/dt;
+                }
+                else
+                {
+                    v = (footL.head(3) - footL_.head(3))/dt;
+                    omega = logMap( (qL_.inverse()*qL).toRotationMatrix() )/dt;
+                }
+
+
+                footL(7) = v(0);
+                footL(8) = v(1);
+                footL(9) = v(2);
+
+                footL(10) = omega(0);
+                footL(11) = omega(1);
+                footL(12) = omega(2);
+
+                footL_ = footL;
+                qL_ = qL;
+
                 footRbuffer.push_back(footR);
                 footLbuffer.push_back(footL);
                 p++;

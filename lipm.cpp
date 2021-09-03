@@ -33,7 +33,7 @@ lipm::lipm()
 
     SS_Instructions = ceil(Tss / dt);
     DS_Instructions = ceil(Tds / dt);
-    zp->setParams(HX, HY, DS_Instructions, MaxStepX, MinStepX, MaxStepY, MinStepY, MaxStepZ);
+    zp->setParams(HX, HY, DS_Instructions, MaxStepX, MinStepX, MaxStepY, MinStepY, MaxStepZ, dt);
     dp->setParams(h, g, dt);
     dp->init();
     std::cout << "LIPM Motion Planning Initialized" << std::endl;
