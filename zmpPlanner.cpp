@@ -134,29 +134,35 @@ void zmpPlanner::plan(Vector2d actual_COP, VectorXd actual_footL, VectorXd actua
         {
 
             targetR = i.target;
+            Quaterniond startqR = Quaterniond(startR(3), startR(4),  startR(5),  startR(6));
+            Quaterniond targetqR = Quaterniond(targetR(3), targetR(4),  targetR(5),  targetR(6));
+            
+            
             // Check for Kinematic Bounds on steps
-            // Quaterniond startqL = Quaterniond(startL(3), startL(4),  startL(5),  startL(6));
-            // Rotation2D<double> rotL(startqL.toRotationMatrix().eulerAngles(0,1,2)(2));
+            Quaterniond startqL = Quaterniond(startL(3), startL(4),  startL(5),  startL(6));
+            Matrix3d rotL = startqL.toRotationMatrix(); 
+            
+            // cout<<"Rot L "<<rotL<<endl;
+            Vector3d Upper, Lower;
+            Upper(0) = MaxStepX;
+            Upper(1) = -MinStepY;
+            Upper(2) = 0;
+            Upper =  rotL * Upper + startL.head(2);
+            
+            Lower(0) = MinStepX;
+            Lower(1) = -MaxStepY;
+            Lower(2) = 0;
+            Lower = rotL * Lower + startL.head(2);
 
-            // dx = Vector2d(targetR(0) - startL(0), targetR(1) - startL(1));
-            // //tempV = rotL.inverse() * dx;
-            // tempV =  dx;
-
-            // tempV(0) = cropStep(tempV(0), MaxStepX, MinStepX);
-            // tempV(1) = cropStep(tempV(1), -MinStepY, -MaxStepY);
-            // //tempV = rotL * tempV;
 
             // cout<<"Target R before Crop "<<targetR.transpose()<<endl;
-
-            // targetR(0) = startL(0) + tempV(0);
-            // targetR(1) = startL(1) + tempV(1);
-
+            targetR(0) = cropStep(targetR(0), Upper(0), Lower(0));
+            targetR(1) = cropStep(targetR(1), Upper(1), Lower(1));
             // cout<<"Target R after Crop "<<targetR.transpose()<<endl;
 
 
 
-            Quaterniond startqR = Quaterniond(startR(3), startR(4),  startR(5),  startR(6));
-            Quaterniond targetqR = Quaterniond(targetR(3), targetR(4),  targetR(5),  targetR(6));
+
             ZMPref = start;
             footL = startL;
             unsigned int p = 0;
@@ -232,26 +238,38 @@ void zmpPlanner::plan(Vector2d actual_COP, VectorXd actual_footL, VectorXd actua
         else if (i.targetSupport == SUPPORT_LEG_RIGHT && i.targetZMP != SUPPORT_LEG_BOTH)
         {
 
-            // Check for Kinematic Bounds on steps
             targetL = i.target;
-            // Quaterniond startqR = Quaterniond(startR(3), startR(4),  startR(5),  startR(6));
+            Quaterniond startqL = Quaterniond(startL(3), startL(4),  startL(5),  startL(6));
+            Quaterniond targetqL = Quaterniond(targetL(3), targetL(4),  targetL(5),  targetL(6));
 
-            // Rotation2D<double> rotR(startqR.toRotationMatrix().eulerAngles(0,1,2)(2));
-            // dx = Vector2d(targetL(0) - startR(0), targetL(1) - startR(1));
-            // //tempV = rotR.inverse() * dx;
-            // tempV = dx;
-            // tempV(0) = cropStep(tempV(0), MaxStepX, MinStepX);
-            // tempV(1) = cropStep(tempV(1), MaxStepY, MinStepY);
 
-            // //tempV = rotR * tempV;
+            // Check for Kinematic Bounds on steps
+            Quaterniond startqR = Quaterniond(startR(3), startR(4),  startR(5),  startR(6));
+            Matrix3d rotR = startqR.toRotationMatrix();
+            // cout<<"Rot R "<<rotR<<endl;
+
+            Vector3d Upper, Lower;
+            Upper(0) = MaxStepX;
+            Upper(1) = MaxStepY;
+            Upper(2) = 0;
+            Upper =  rotR * Upper + startR.head(3);
+            
+            Lower(0) = MinStepX;
+            Lower(1) = MinStepY;
+            Lower(2) = 0;
+            Lower =  rotR * Lower + startR.head(3);
+
+
             // cout<<"Target L before Crop "<<targetL.transpose()<<endl;
-            // targetL(0) = startR(0) + tempV(0);
-            // targetL(1) = startR(1) + tempV(1);
+            targetL(0) = cropStep(targetL(0), Upper(0), Lower(0));
+            targetL(1) = cropStep(targetL(1), Upper(1), Lower(1));
             // cout<<"Target L after Crop "<<targetL.transpose()<<endl;
 
 
-            Quaterniond startqL = Quaterniond(startL(3), startL(4),  startL(5),  startL(6));
-            Quaterniond targetqL = Quaterniond(targetL(3), targetL(4),  targetL(5),  targetL(6));
+
+
+
+
             ZMPref = start;
             footR = startR;
 
