@@ -40,12 +40,12 @@ add_dependencies(lipm_motion_node ${catkin_EXPORTED_TARGETS})
 
 
 
-add_executable(lipm_motion_test test.cpp lipm.cpp  zmpPlanner.cpp dcmPlanner.cpp dcmDynamics.cpp LIPMPlanner.cpp LIPMDynamics.cpp)
-add_dependencies(lipm_motion_test ${catkin_EXPORTED_TARGETS})
+#add_executable(lipm_motion_test test.cpp lipm.cpp  zmpPlanner.cpp dcmPlanner.cpp dcmDynamics.cpp LIPMPlanner.cpp LIPMDynamics.cpp)
+#add_dependencies(lipm_motion_test ${catkin_EXPORTED_TARGETS})
 
 
-target_include_directories(lipm_motion_test PRIVATE ${PYTHON_INCLUDE_DIRS})
+#target_include_directories(lipm_motion_test PRIVATE ${PYTHON_INCLUDE_DIRS})
 
 
 target_link_libraries(lipm_motion_node ${catkin_LIBRARIES} ${EIGEN3_LIBRARIES} ${Boost_LIBRARIES})
-target_link_libraries(lipm_motion_test ${catkin_LIBRARIES} ${EIGEN3_LIBRARIES} ${Boost_LIBRARIES} ${PYTHON_LIBRARIES})
+#target_link_libraries(lipm_motion_test ${catkin_LIBRARIES} ${EIGEN3_LIBRARIES} ${Boost_LIBRARIES} ${PYTHON_LIBRARIES})

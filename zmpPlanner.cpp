@@ -178,8 +178,8 @@ void zmpPlanner::plan(Vector2d actual_COP, VectorXd actual_footL, VectorXd actua
                 //Compute Desired Right Leg Velocity
                 if(p==0)
                 {
-                    v = (footR.head(3) - targetR.head(3))/dt;
-                    omega = logMap( (targetqR.inverse()*qR).toRotationMatrix() )/dt;
+                    v = (footR.head(3) - startR.head(3))/dt;
+                    omega = logMap( (startqR.inverse()*qR).toRotationMatrix() )/dt;
                 }
                 else
                 {
@@ -273,8 +273,8 @@ void zmpPlanner::plan(Vector2d actual_COP, VectorXd actual_footL, VectorXd actua
                 //Compute Desired Right Leg Velocity
                 if(p==0)
                 {
-                    v = (footL.head(3) - targetL.head(3))/dt;
-                    omega = logMap( (targetqL.inverse()*qL).toRotationMatrix() )/dt;
+                    v = (footL.head(3) - startL.head(3))/dt;
+                    omega = logMap( (startqL.inverse()*qL).toRotationMatrix() )/dt;
                 }
                 else
                 {
