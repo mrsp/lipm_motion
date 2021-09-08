@@ -147,12 +147,12 @@ void zmpPlanner::plan(Vector2d actual_COP, VectorXd actual_footL, VectorXd actua
             Upper(0) = MaxStepX;
             Upper(1) = -MinStepY;
             Upper(2) = 0;
-            Upper =  rotL * Upper + startL.head(2);
+            Upper =  rotL * Upper + startL.head(3);
             
             Lower(0) = MinStepX;
             Lower(1) = -MaxStepY;
             Lower(2) = 0;
-            Lower = rotL * Lower + startL.head(2);
+            Lower = rotL * Lower + startL.head(3);
 
 
             // cout<<"Target R before Crop "<<targetR.transpose()<<endl;
