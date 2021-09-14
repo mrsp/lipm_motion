@@ -2,7 +2,7 @@
 
 LIPMDynamics::LIPMDynamics()
 {
-    //State is com, vcom, zmp
+    //State is com, vcom, acom, zmp, input u is com jerk
     x.setZero();
     A.setZero();
     B.setZero();

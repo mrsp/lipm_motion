@@ -6,9 +6,9 @@ lipm_ros::lipm_ros(ros::NodeHandle nh_)
     ros::NodeHandle n_p("~");
     isPlanAvailable = false;
 
-    zp = new zmpPlanner(15000);
+    zp = new zmpPlanner(150000);
     //dp = new dcmPlanner(15000);
-    dp = new LIPMPlanner(15000);
+    dp = new LIPMPlanner(150000);
 
     CoM_pub = nh.advertise<lipm_msgs::TrajectoryPoints>("lipm_motion/CoM", 1000);
     DCM_pub = nh.advertise<lipm_msgs::TrajectoryPoints>("lipm_motion/DCM", 1000);
@@ -16,7 +16,8 @@ lipm_ros::lipm_ros(ros::NodeHandle nh_)
     footL_pub = nh.advertise<lipm_msgs::TrajectoryPoints>("lipm_motion/LLeg", 1000);
     footR_pub = nh.advertise<lipm_msgs::TrajectoryPoints>("lipm_motion/RLeg", 1000);
 
-    double dt;
+    double dt, q, r;
+    int Np;
 
     n_p.param<double>("gravity", g, 9.80665);
     n_p.param<double>("hc", comZ, 0.268);
@@ -31,8 +32,12 @@ lipm_ros::lipm_ros(ros::NodeHandle nh_)
     n_p.param<double>("Tds", Tds, 1.0);
     n_p.param<double>("HX", HX, -0.025);
     n_p.param<double>("HY", HY, 0.0);
+    n_p.param<double>("Q", q, -0.025);
+    n_p.param<double>("R", r, 0.0);
+    n_p.param<int>("Np", Np, 150);
     n_p.param<bool>("debug", debug, true);
-    cout<<"HX "<<HX<<endl;
+
+
     if (debug)
     {
         CoM_path_pub = nh.advertise<nav_msgs::Path>("lipm_motion/CoM/path", 1000);
@@ -44,7 +49,7 @@ lipm_ros::lipm_ros(ros::NodeHandle nh_)
     SS_Instructions = ceil(Tss / dt);
     DS_Instructions = ceil(Tds / dt);
     zp->setParams(HX, HY, DS_Instructions, MaxStepX, MinStepX, MaxStepY, MinStepY, MaxStepZ, dt);
-    dp->setParams(comZ, g, dt);
+    dp->setParams(comZ, g, dt,q ,r ,Np);
     dp->init();
     as_ = new actionlib::SimpleActionServer<lipm_msgs::MotionPlanAction>(nh, "lipm_motion/plan", boost::bind(&lipm_ros::desiredFootstepsCb, this, _1), false);
     as_->start();
@@ -163,7 +168,6 @@ void lipm_ros::desiredFootstepsCb(const lipm_msgs::MotionPlanGoalConstPtr &goal)
     zp->plan(VRP, lfoot, rfoot);
 
     dp->setState(CoM, dCoM, VRP);
-    //dp->setState(DCM,CoM,VRP);
     boost::circular_buffer<VectorXd> ZMPdBuffer = zp->ZMPbuffer;
     dp->plan(zp->ZMPbuffer);
     isPlanAvailable = true;
@@ -226,10 +230,10 @@ void lipm_ros::desiredFootstepsCb(const lipm_msgs::MotionPlanGoalConstPtr &goal)
             CoM_path.poses[j].pose.position.z = dp->CoMBuffer[j](2);
             VRP_path.poses[j].pose.position.x = dp->VRPBuffer[j](0);
             VRP_path.poses[j].pose.position.y = dp->VRPBuffer[j](1);
-            VRP_path.poses[j].pose.position.z = dp->VRPBuffer[j](2);
+            VRP_path.poses[j].pose.position.z = 0;
             // VRP_path.poses[j].pose.position.x = ZMPdBuffer[j](0);
             // VRP_path.poses[j].pose.position.y = ZMPdBuffer[j](1);
-            // VRP_path.poses[j].pose.position.z = ZMPdBuffer[j](2);
+            // VRP_path.poses[j].pose.position.z = 0;
 
             DCM_path.poses[j].pose.position.x = dp->DCMBuffer[j](0);
             DCM_path.poses[j].pose.position.y = dp->DCMBuffer[j](1);

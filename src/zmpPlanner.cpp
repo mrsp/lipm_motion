@@ -134,8 +134,8 @@ void zmpPlanner::plan(Vector2d actual_COP, VectorXd actual_footL, VectorXd actua
         {
 
             targetR = i.target;
-            Quaterniond startqR = Quaterniond(startR(3), startR(4),  startR(5),  startR(6));
             Quaterniond targetqR = Quaterniond(targetR(3), targetR(4),  targetR(5),  targetR(6));
+            Quaterniond startqR = Quaterniond(startR(3), startR(4),  startR(5),  startR(6));
             
             
             // Check for Kinematic Bounds on steps
@@ -239,8 +239,8 @@ void zmpPlanner::plan(Vector2d actual_COP, VectorXd actual_footL, VectorXd actua
         {
 
             targetL = i.target;
-            Quaterniond startqL = Quaterniond(startL(3), startL(4),  startL(5),  startL(6));
             Quaterniond targetqL = Quaterniond(targetL(3), targetL(4),  targetL(5),  targetL(6));
+            Quaterniond startqL = Quaterniond(startL(3), startL(4),  startL(5),  startL(6));
 
 
             // Check for Kinematic Bounds on steps

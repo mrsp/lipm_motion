@@ -1,0 +1,6 @@
+<launch>
+	<node pkg = "lipm_motion"  type = "lipm_motion_node"  name = "lipm_motion" output = "screen" respawn = "false">
+	   	 <rosparam file="$(find lipm_motion)/config/atlas_planning_params.yaml" command="load"/> 
+	</node>
+	<node pkg = "rviz" type = "rviz" respawn = "false" name = "rviz" output = "screen" args ="-d $(find lipm_motion)/share/lipm_motion.rviz"> </node>
+</launch>

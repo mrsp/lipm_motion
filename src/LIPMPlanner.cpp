@@ -6,7 +6,46 @@ LIPMPlanner::LIPMPlanner(int bsize):  CoMBuffer(bsize), DCMBuffer(bsize), VRPBuf
     A.setZero();
     B.setZero();
     C.setZero();
- 
+	//State is com, vcom, acom, ZMP u is com jerk
+    x.setZero();
+    y.setZero();
+    x_.setZero();
+    y_.setZero();
+    dcmx_d = 0;
+    comx_d = 0;
+    comdx_d = 0;
+    dcmdx_d = 0;
+    ZMPx_d = 0;
+    dcmy_d = 0;
+    comy_d = 0;
+    comdy_d = 0;
+    dcmdy_d = 0;
+    ZMPy_d = 0;
+    u_x = 0;
+    u_y = 0;
+    CoM_d.resize(9);
+    DCM_d.resize(6);
+    ZMP_d.resize(3);
+
+}
+
+void LIPMPlanner::setParams(double comZ_, double g_, double dt_, double q_, double r_, int Np_)
+{
+    comZ= comZ_;
+    g = g_;
+    omega = sqrt(g/comZ);
+    dt = dt_;
+    Np = Np_; 
+    rv = r_; 
+    qv = q_;
+
+    LIPMDynamicsX.setParams(omega,dt);
+    LIPMDynamicsY.setParams(omega,dt);
+}
+
+
+void LIPMPlanner::init()
+{
 
 
     //ZMP
@@ -27,45 +66,12 @@ LIPMPlanner::LIPMPlanner(int bsize):  CoMBuffer(bsize), DCMBuffer(bsize), VRPBuf
  
     U_x.resize(Np);
     U_y.resize(Np);
-	//State is com, dcm, ZMP, and ZMP offset
-    x.setZero();
-    y.setZero();
-    x_.setZero();
-    y_.setZero();
+
     ZMPRefX.resize(Np,1);  
     ZMPRefY.resize(Np,1);  
     ZMPRefX.setZero();
     ZMPRefY.setZero();
-    dcmx_d = 0;
-    comx_d = 0;
-    comdx_d = 0;
-    dcmdx_d = 0;
-    ZMPx_d = 0;
-    dcmy_d = 0;
-    comy_d = 0;
-    comdy_d = 0;
-    dcmdy_d = 0;
-    ZMPy_d = 0;
-    u_x = 0;
-    u_y = 0;
-    CoM_d.resize(9);
-    DCM_d.resize(6);
-    ZMP_d.resize(3);
-}
 
-void LIPMPlanner::setParams(double comZ_, double g_, double dt_)
-{
-    comZ= comZ_;
-    g = g_;
-    omega = sqrt(g/comZ);
-    dt = dt_;
-    LIPMDynamicsX.setParams(omega,dt);
-    LIPMDynamicsY.setParams(omega,dt);
-}
-
-
-void LIPMPlanner::init()
-{
 
     LIPMDynamicsX.init();
     LIPMDynamicsY.init();
@@ -77,26 +83,24 @@ void LIPMPlanner::init()
 
 
 
-    Fv.block<1,4>(0,0)=C.transpose()*A;
+    Fv.block(0,0,1,4)=C.transpose()*A;
     Fvu(0,0) = C.transpose()*B;
     temp = B;
 
     for (unsigned int i = 1; i < Np; i++)
     {
-        Fv.block<1,4>(i,0) =  Fv.block<1,4>(i-1,0) * A;
-	    tmpb = Fvu.block<1,Np-1>(i-1,0);
-        Fvu.block<1,Np-1>(i,1) = tmpb;
+        Fv.block(i,0,1,4) =  Fv.block(i-1,0,1,4) * A;
+	    tmpb = Fvu.block(i-1,0,1,Np-1);
+        Fvu.block(i,1,1,Np-1) = tmpb;
         temp = A*temp;
         Fvu(i,0) =  C.transpose()*temp;
     }
 
 
     R.setIdentity();
-    R*=1.0e-6;
-
-    qv = 0.05;
+    R*=rv; 
     Qv.setIdentity();
-    Qv = Qv*qv;
+    Qv *= qv;
 
 
     //Hessian Matrix
@@ -148,7 +152,6 @@ void LIPMPlanner::plan(boost::circular_buffer<VectorXd> & ZMPRef)
         }
      }
 
-	
     x = LIPMDynamicsX.getState();
     y = LIPMDynamicsY.getState();
 	//Optimal MPC Law

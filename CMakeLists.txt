@@ -23,29 +23,7 @@ catkin_package(
   CATKIN_DEPENDS roscpp std_msgs nav_msgs geometry_msgs  lipm_msgs
   DEPENDS EIGEN3 Boost
 )
-
-
-
-
-
-
 include_directories(include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIR})
-
-add_library(lipm_motion main.cpp  lipm_ros.cpp zmpPlanner.cpp dcmPlanner.cpp dcmDynamics.cpp)
-add_dependencies(lipm_motion ${catkin_EXPORTED_TARGETS})
-target_link_libraries(lipm_motion ${catkin_LIBRARIES} ${EIGEN3_LIBRARIES} ${Boost_LIBRARIES})
-
-add_executable(lipm_motion_node main.cpp  lipm_ros.cpp zmpPlanner.cpp dcmPlanner.cpp dcmDynamics.cpp LIPMPlanner.cpp LIPMDynamics.cpp)
+add_executable(lipm_motion_node src/main.cpp   src/lipm_ros.cpp  src/zmpPlanner.cpp  src/LIPMPlanner.cpp  src/LIPMDynamics.cpp)
 add_dependencies(lipm_motion_node ${catkin_EXPORTED_TARGETS})
-
-
-
-#add_executable(lipm_motion_test test.cpp lipm.cpp  zmpPlanner.cpp dcmPlanner.cpp dcmDynamics.cpp LIPMPlanner.cpp LIPMDynamics.cpp)
-#add_dependencies(lipm_motion_test ${catkin_EXPORTED_TARGETS})
-
-
-#target_include_directories(lipm_motion_test PRIVATE ${PYTHON_INCLUDE_DIRS})
-
-
 target_link_libraries(lipm_motion_node ${catkin_LIBRARIES} ${EIGEN3_LIBRARIES} ${Boost_LIBRARIES})
-#target_link_libraries(lipm_motion_test ${catkin_LIBRARIES} ${EIGEN3_LIBRARIES} ${Boost_LIBRARIES} ${PYTHON_LIBRARIES})
