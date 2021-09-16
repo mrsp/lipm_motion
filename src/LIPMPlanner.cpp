@@ -63,10 +63,12 @@ void LIPMPlanner::init()
     H.resize(Np,Np);
     H_inv.resize(Np,Np);
     H.setZero();
- 
+    I.resize(Np,Np);
+    I.setIdentity();
     U_x.resize(Np);
     U_y.resize(Np);
-
+    Gx.resize(Np,4);
+    Gp.resize(Np,Np);
     ZMPRefX.resize(Np,1);  
     ZMPRefY.resize(Np,1);  
     ZMPRefX.setZero();
@@ -97,23 +99,20 @@ void LIPMPlanner::init()
     }
 
 
-    R.setIdentity();
-    R*=rv; 
-    Qv.setIdentity();
-    Qv *= qv;
-
+    R = I * rv; 
+    Qv = I * qv;
 
     //Hessian Matrix
-    H = R*Qv.inverse();
+    H = R*Qv.llt().solve(I);
     H.noalias() += Fvu.transpose()*Fvu;
 
     
     //Make Symmetric
     //H = (H+H.transpose())/2.0;
     //Compute the Gains
-    H_inv = H.inverse();
-    
-
+    H_inv = H.llt().solve(I);
+    Gp = -H_inv* Fvu.transpose();
+    Gx = Gp*Fv;
 
     planAvailable = false;
 }
@@ -156,8 +155,8 @@ void LIPMPlanner::plan(boost::circular_buffer<VectorXd> & ZMPRef)
     y = LIPMDynamicsY.getState();
 	//Optimal MPC Law
 
-    U_x = -H_inv*(Fvu.transpose()*(Fv*x-ZMPRefX));
-    U_y = -H_inv*(Fvu.transpose()*(Fv*y-ZMPRefY));
+    U_x = Gx*x - Gp *ZMPRefX;
+    U_y = Gx*y - Gp *ZMPRefY;
 
     u_x =  U_x(0);
     u_y =  U_y(0);

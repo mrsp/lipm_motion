@@ -14,7 +14,7 @@ class LIPMPlanner
  	    Vector4d x,y,x_,y_;
         Matrix4d A;
         Vector4d B,C;
-        MatrixXd Fv, Fvu, R, Qv, H , tmpb, H_inv;
+        MatrixXd Fv, Fvu, R, Qv, H , tmpb, H_inv, I, Gx, Gp;
         VectorXd K_v, ZMPRefX, ZMPRefY, temp,  U_x, U_y;
         VectorXd dCoM_d, CoM_d, ZMP_d, DCM_d;
         double comZ, g, dt, omega , rv, qv, u_x, u_y;
