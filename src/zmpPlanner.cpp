@@ -41,10 +41,11 @@ zmpPlanner::zmpPlanner(int bsize) : ZMPbuffer(bsize), footRbuffer(bsize), footLb
     planned.step_id = -1;
 }
 
-void zmpPlanner::setParams(double HX_, double HY_, int DS_Instructions_, double MaxStepX_, double MinStepX_, double MaxStepY_, double MinStepY_, double MaxStepZ_, double dt_)
+void zmpPlanner::setParams(double HX_, double HY_, double HZ_, int DS_Instructions_, double MaxStepX_, double MinStepX_, double MaxStepY_, double MinStepY_, double MaxStepZ_, double dt_)
 {
     HX = HX_;
     HY = HY_;
+    HZ = HZ_;
     DS_Instructions = DS_Instructions_;
     MaxStepX = MaxStepX_;
     MinStepX = MinStepX_;
@@ -54,35 +55,8 @@ void zmpPlanner::setParams(double HX_, double HY_, int DS_Instructions_, double 
     dt = dt_;
 }
 
-void zmpPlanner::setFeet(VectorXd sl, VectorXd sr)
-{
-    startL = sl;
-    startR = sr;
-    /** Double Support Phase **/
-    //Convention is w,x,y,z
-    Quaterniond ql(sl(3),sl(4),sl(5),sl(6)), qr(sr(3),sr(4),sr(5),sr(6));
 
-    double yawl = ql.toRotationMatrix().eulerAngles(0, 1, 2)(2);
-    double yawr = qr.toRotationMatrix().eulerAngles(0, 1, 2)(2);
-
-    float meanangle = anglemean(yawl, yawr);
-    /** planL,planR are the ankle positions, transforming them to Reference ZMP **/
-    Rotation2D<double> rotR(yawr);
-
-    Vector2d rr = rotR * Vector2d(-HX, -HY);
-    start(0) = rr(0) + startR(0);
-    start(1) = rr(1) + startR(1);
-
-    Rotation2D<double> rotL(yawl);
-
-    rr = rotL * Vector2d(-HX, HY);
-    start(0) = rr(0) + startL(0);
-    start(1) = rr(1) + startL(1);
-    start *= 0.5;
-    start(2) = meanangle;
-}
-
-void zmpPlanner::plan(Vector2d actual_COP, VectorXd actual_footL, VectorXd actual_footR)
+void zmpPlanner::plan(Vector3d actual_COP, VectorXd actual_footL, VectorXd actual_footR)
 {
 
     if (stepAnkleQ.size() == 0)
@@ -91,7 +65,7 @@ void zmpPlanner::plan(Vector2d actual_COP, VectorXd actual_footL, VectorXd actua
         return;
     }
     bool add_initial_Transition = true;
-    start.head(2) = actual_COP;
+    start  = actual_COP;
     startR = actual_footR;
     startL = actual_footL;
 
@@ -108,16 +82,15 @@ void zmpPlanner::plan(Vector2d actual_COP, VectorXd actual_footL, VectorXd actua
             footL = startL;
             unsigned int p = 0;
 
-            while (p < 3*DS_Instructions)
+            while (p < 2*DS_Instructions)
             {
 
-                /** Angle between the ending and starting foot orientation **/
-                float adiff =  anglediff2(target(2), start(2));
+
 
                 /** ZMP Trajectory Generation **/
-                ZMPref(0) = interp.planFeetTrajectoryXY((float)p, target(0), start(0), 3*DS_Instructions - 1.0);
-                ZMPref(1) = interp.planFeetTrajectoryXY((float)p, target(1), start(1), 3*DS_Instructions - 1.0);
-                ZMPref(2) = start(2) + interp.LinearInterpolation((float)p, adiff, 0.000, 3*DS_Instructions - 1.0);
+                ZMPref(0) = interp.planFeetTrajectoryXY((float)p, target(0), start(0), 2*DS_Instructions - 1.0);
+                ZMPref(1) = interp.planFeetTrajectoryXY((float)p, target(1), start(1), 2*DS_Instructions - 1.0);
+                ZMPref(2) = interp.LinearInterpolation((float)p, target(2), start(2), 2*DS_Instructions - 1.0);
 
                 /** ZMP Point pushed to ZMP buffer **/
                 ZMPbuffer.push_back(ZMPref);
@@ -211,20 +184,19 @@ void zmpPlanner::plan(Vector2d actual_COP, VectorXd actual_footL, VectorXd actua
             }
 
             i.steps = DS_Instructions;
-            target.head(2) = targetR.head(2);
-            target(2) = targetqR.toRotationMatrix().eulerAngles(0,1,2)(2);
+            target = targetR.head(3) + targetqR.toRotationMatrix()*Vector3d(HX, HY, HZ);
+            //target = computeDesiredZMP(startL,targetR,i);
 
             footR = targetR;
             footL = startL;
             p = 0;
             while (p < i.steps)
             {
-                /** Angle between the ending and starting foot orientation **/
-                float adiff = anglediff2(target(2), start(2));
                 /** ZMP Trajectory Generation **/
                 ZMPref(0) = interp.planFeetTrajectoryXY((float)p, target(0), start(0), i.steps - 1.0);
                 ZMPref(1) = interp.planFeetTrajectoryXY((float)p, target(1), start(1), i.steps - 1.0);
-                ZMPref(2) = start(2) + interp.LinearInterpolation((float)p, adiff, 0.000, i.steps - 1.0);
+                ZMPref(2) = interp.LinearInterpolation((float)p, target(2), start(2), i.steps - 1.0);
+
                 /** ZMP Point pushed to ZMP buffer **/
                 ZMPbuffer.push_back(ZMPref);
                 footRbuffer.push_back(footR);
@@ -318,8 +290,8 @@ void zmpPlanner::plan(Vector2d actual_COP, VectorXd actual_footL, VectorXd actua
             }
 
             i.steps = DS_Instructions;
-            target.head(2) = targetL.head(2);
-            target(2) = targetqL.toRotationMatrix().eulerAngles(0,1,2)(2);
+            //target = computeDesiredZMP(targetL,startR,i);
+            target = targetL.head(3) + targetqL.toRotationMatrix()*Vector3d(HX, -HY, HZ);
 
 
             footR = startR;
@@ -327,12 +299,10 @@ void zmpPlanner::plan(Vector2d actual_COP, VectorXd actual_footL, VectorXd actua
             p = 0;
             while (p < i.steps)
             {
-                /** Angle between the ending and starting foot orientation **/
-                float adiff = anglediff2(target(2), start(2));
                 /** ZMP Trajectory Generation **/
                 ZMPref(0) = interp.planFeetTrajectoryXY((float)p, target(0), start(0), i.steps - 1.0);
                 ZMPref(1) = interp.planFeetTrajectoryXY((float)p, target(1), start(1), i.steps - 1.0);
-                ZMPref(2) = start(2) + interp.LinearInterpolation((float)p, adiff, 0.000, i.steps - 1.0);
+                ZMPref(2) = interp.LinearInterpolation((float)p, target(2), start(2), i.steps - 1.0);
                 /** ZMP Point pushed to ZMP buffer **/
                 ZMPbuffer.push_back(ZMPref);
                 footRbuffer.push_back(footR);
@@ -350,16 +320,14 @@ void zmpPlanner::plan(Vector2d actual_COP, VectorXd actual_footL, VectorXd actua
             Quaterniond startqL = Quaterniond(startL(3), startL(4),  startL(5),  startL(6));
             Quaterniond startqR = Quaterniond(startR(3), startR(4),  startR(5),  startR(6));
             unsigned int p = 0;
-            target.head(2) = 0.5*(startR.head(2) + startL.head(2));
-            target(2) = anglemean(startqL.toRotationMatrix().eulerAngles(0,1,2)(2), startqR.toRotationMatrix().eulerAngles(0,1,2)(2));
+            //target = computeDesiredZMP(startL,startR,i);
+            target = 0.5*(startR.head(3) + startqR.toRotationMatrix()*Vector3d(HX, HY, HZ) +  startL.head(3) + startqL.toRotationMatrix()*Vector3d(HX, -HY, HZ));
             while (p < 2.0*DS_Instructions)
             {
-                /** Angle between the ending and starting foot orientation **/
-                float adiff = anglediff2(target(2), start(2));
                 /** ZMP Trajectory Generation **/
                 ZMPref(0) = interp.planFeetTrajectoryXY((float)p, target(0), start(0),  2.0*DS_Instructions - 1.0);
                 ZMPref(1) = interp.planFeetTrajectoryXY((float)p, target(1), start(1),  2.0*DS_Instructions - 1.0);
-                ZMPref(2) = start(2) + interp.LinearInterpolation((float)p, adiff, 0.000,  2.0*DS_Instructions - 1.0);
+                ZMPref(2) = interp.LinearInterpolation((float)p, target(2), start(2),  2.0*DS_Instructions - 1.0);
                 /** ZMP Point pushed to ZMP buffer **/
                 ZMPbuffer.push_back(ZMPref);
                 footRbuffer.push_back(footR);
@@ -390,39 +358,25 @@ VectorXd zmpPlanner::computeDesiredZMP(VectorXd sl, VectorXd sr, WalkInstruction
     t.setZero();
     //Convention is w,x,y,z
     Quaterniond ql(sl(3),sl(4),sl(5),sl(6)), qr(sr(3),sr(4),sr(5),sr(6));
-    double yawl = ql.toRotationMatrix().eulerAngles(0, 1, 2)(2);
-    double yawr = qr.toRotationMatrix().eulerAngles(0, 1, 2)(2);
-    /** Computing the  Reference ZMP point (x,y,yaw) **/
-
-    Rotation2D<double> rotL(yawl);
-    Rotation2D<double> rotR(yawr);
+    Matrix3d rotL = ql.toRotationMatrix();
+    Matrix3d rotR = qr.toRotationMatrix();
+    /** Computing the  Reference ZMP point (x,y,z) **/
     if (i.targetZMP == SUPPORT_LEG_RIGHT)
     {
         /** Right Support Phase **/
-        Vector2d rr = rotR * Vector2d(-HX, HY);
-        t(0) = rr(0) + sr(0); //x
-        t(1) = rr(1) + sr(1); //y
-        t(2) = yawr;         //theta
+        t = sr + rotR * Vector3d(HX, HY, HZ);
     }
     else if (i.targetZMP == SUPPORT_LEG_LEFT)
     {
         /** Left Support Phase **/
-        Vector2d rr = rotL * Vector2d(-HX, -HY);
-        t(0) = rr(0) + sl(0);
-        t(1) = rr(1) + sl(1);
-        t(2) = yawl;
+        t = sl + rotL * Vector3d(HX, -HY, HZ);
     }
     else
     {
         /** Double Support Phase **/
-        Vector2d rr = rotL * Vector2d(-HX, -HY);
-        t(0) = rr(0) + sl(0);
-        t(1) = rr(1) + sl(1);
-        rr = rotR * Vector2d(-HX, HY);
-        t(0) += rr(0) + sr(0);
-        t(1) += rr(1) + sr(1);
+        t = sl + rotL * Vector3d(HX, -HY, HZ);
+        t += sr + rotR * Vector3d(HX, HY, HZ);
         t *= 0.5;
-        t(2) = anglemean(yawl, yawr);
     }
     return t;
 }

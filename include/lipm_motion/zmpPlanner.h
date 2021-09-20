@@ -19,7 +19,7 @@ class zmpPlanner
 private:
     WalkInstruction planned;
     KWalkMat interp;
-    double HX, HY, DS_Instructions,  MaxStepX,  MinStepX,  MaxStepY, MinStepY, MaxStepZ, dt;
+    double HX, HY, HZ, DS_Instructions,  MaxStepX,  MinStepX,  MaxStepY, MinStepY, MaxStepZ, dt;
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     VectorXd start, target, startL, startR, targetR, targetL, footR, footL, ZMPref, footR_, footL_, v, omega;
@@ -36,8 +36,8 @@ public:
     void setFeet(VectorXd  sl, VectorXd sr);
     VectorXd computeDesiredZMP(VectorXd sl, VectorXd sr, WalkInstruction i);
     void emptyPlan();
-    void plan(Vector2d COP, VectorXd lf, VectorXd rf);
-    void setParams(double HX_, double HY_, int DS_Instructions_, double MaxStepX_, double MinStepX_, double MaxStepY_, double MinStepY_,double MaxStepZ_, double dt_);
+    void plan(Vector3d COP, VectorXd lf, VectorXd rf);
+    void setParams(double HX_, double HY_, double HZ_, int DS_Instructions_, double MaxStepX_, double MinStepX_, double MaxStepY_, double MinStepY_,double MaxStepZ_, double dt_);
     zmpPlanner(int bsize);
     //Step Adjustment
     //StepAdjustment sa;
