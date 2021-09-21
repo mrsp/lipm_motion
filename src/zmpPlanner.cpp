@@ -364,18 +364,18 @@ VectorXd zmpPlanner::computeDesiredZMP(VectorXd sl, VectorXd sr, WalkInstruction
     if (i.targetZMP == SUPPORT_LEG_RIGHT)
     {
         /** Right Support Phase **/
-        t = sr + rotR * Vector3d(HX, HY, HZ);
+        t = sr.head(3) + rotR * Vector3d(HX, HY, HZ);
     }
     else if (i.targetZMP == SUPPORT_LEG_LEFT)
     {
         /** Left Support Phase **/
-        t = sl + rotL * Vector3d(HX, -HY, HZ);
+        t = sl.head(3) + rotL * Vector3d(HX, -HY, HZ);
     }
     else
     {
         /** Double Support Phase **/
-        t = sl + rotL * Vector3d(HX, -HY, HZ);
-        t += sr + rotR * Vector3d(HX, HY, HZ);
+        t = sl.head(3) + rotL * Vector3d(HX, -HY, HZ);
+        t += sr.head(3) + rotR * Vector3d(HX, HY, HZ);
         t *= 0.5;
     }
     return t;
