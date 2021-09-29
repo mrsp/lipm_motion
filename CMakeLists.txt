@@ -15,7 +15,7 @@ lipm_msgs
 
 find_package(Eigen3 REQUIRED)
 find_package(Boost REQUIRED)
-find_package(PythonLibs 2.7)
+
 
 catkin_package(
   INCLUDE_DIRS include
