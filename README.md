@@ -16,10 +16,30 @@ These instructions will get you a copy of the project up and running on your loc
 * catkin_make -DCMAKE_BUILD_TYPE=Release 
 * If you are using catkin tools run: catkin build  --cmake-args -DCMAKE_BUILD_TYPE=Release 
 
-
-
 ## ROS Examples
+### Launch on your Robot 
+* Specify topics on config/planning_params.yaml
+* roslaunch lipm_motion lipm_motion.launch
+
 ### Example Motion Plan for the Atlas humanoid robot
+* roslaunch lipm_motion lipm_motion_atlas.launch
 <p align="center">
 <img src="img/MotionPlan.png" /img>
 </p>
+
+## Citation
+Upon usage in an academic work kindly cite: <br/> <br/>
+  @INPROCEEDINGS{PiperakisIROS14, <br/>
+  author={S. {Piperakis} and E. {Orfanoudakis} and  M.G. {Lagoudakis}}, <br/>
+  booktitle={2014 IEEE/RSJ International Conference on Intelligent Robots and Systems}, <br/> 
+  title={{Predictive Control for Dynamic Locomotion of Real Humanoid Robots}}, <br/>
+  year={2014}, <br/>
+  volume={}, <br/>
+  number={}, <br/>
+  pages={4036-4043}, <br/>
+  doi={10.1109/IROS.2014.6943130}}, <br/>
+  month ={Sept}, <br/>
+}<br/>
+
+## License
+[BSD](LICENSE) 
