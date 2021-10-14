@@ -239,7 +239,7 @@ void lipm_ros::desiredFootstepsCb(const lipm_msgs::MotionPlanGoalConstPtr &goal)
             DCM_path.poses[j].pose.position.x = dp->DCMBuffer[j](0);
             DCM_path.poses[j].pose.position.y = dp->DCMBuffer[j](1);
             DCM_path.poses[j].pose.position.z = dp->DCMBuffer[j](2);
-            
+
             footL_path.poses[j].pose.position.x = zp->footLbuffer[j](0);
             footL_path.poses[j].pose.position.y = zp->footLbuffer[j](1);
             footL_path.poses[j].pose.position.z = zp->footLbuffer[j](2);
@@ -248,6 +248,11 @@ void lipm_ros::desiredFootstepsCb(const lipm_msgs::MotionPlanGoalConstPtr &goal)
             footL_path.poses[j].pose.orientation.x = zp->footLbuffer[j](4);
             footL_path.poses[j].pose.orientation.y = zp->footLbuffer[j](5);
             footL_path.poses[j].pose.orientation.z = zp->footLbuffer[j](6);
+
+            footR_path.poses[j].pose.position.x = zp->footRbuffer[j](0);
+            footR_path.poses[j].pose.position.y = zp->footRbuffer[j](1);
+            footR_path.poses[j].pose.position.z = zp->footRbuffer[j](2);
+
 
             footR_path.poses[j].pose.orientation.w = zp->footRbuffer[j](3);
             footR_path.poses[j].pose.orientation.x = zp->footRbuffer[j](4);
