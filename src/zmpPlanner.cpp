@@ -77,7 +77,23 @@ void zmpPlanner::plan(Vector3d actual_COP, VectorXd actual_footL, VectorXd actua
         /** Add an initial ZMP transition **/
         if (add_initial_Transition)
         {
-            target = computeDesiredZMP(startL, startR, i);
+            Quaterniond ql(startL(3),startL(4),startL(5),startL(6)), qr(startR(3),startR(4),startR(5),startR(6));
+            Matrix3d rotL = ql.toRotationMatrix();
+            Matrix3d rotR = qr.toRotationMatrix();
+
+            /** Computing the  Reference ZMP point (x,y,z) **/
+            if (i.targetZMP == SUPPORT_LEG_RIGHT)
+            {
+                /** Right Support Phase **/
+                target = startR.head(3) + rotR * Vector3d(HX, -HY, HZ);
+            }
+            else if (i.targetZMP == SUPPORT_LEG_LEFT)
+            {
+                /** Left Support Phase **/
+                target = startL.head(3) + rotL * Vector3d(HX, HY, HZ);
+            }
+
+
             footR = startR;
             footL = startL;
             unsigned int p = 0;
@@ -129,8 +145,8 @@ void zmpPlanner::plan(Vector3d actual_COP, VectorXd actual_footL, VectorXd actua
 
 
             // cout<<"Target R before Crop "<<targetR.transpose()<<endl;
-            targetR(0) = cropStep(targetR(0), Upper(0), Lower(0));
-            targetR(1) = cropStep(targetR(1), Upper(1), Lower(1));
+            // targetR(0) = cropStep(targetR(0), Upper(0), Lower(0));
+            // targetR(1) = cropStep(targetR(1), Upper(1), Lower(1));
             // cout<<"Target R after Crop "<<targetR.transpose()<<endl;
 
 
@@ -233,8 +249,8 @@ void zmpPlanner::plan(Vector3d actual_COP, VectorXd actual_footL, VectorXd actua
 
 
             // cout<<"Target L before Crop "<<targetL.transpose()<<endl;
-            targetL(0) = cropStep(targetL(0), Upper(0), Lower(0));
-            targetL(1) = cropStep(targetL(1), Upper(1), Lower(1));
+            // targetL(0) = cropStep(targetL(0), Upper(0), Lower(0));
+            // targetL(1) = cropStep(targetL(1), Upper(1), Lower(1));
             // cout<<"Target L after Crop "<<targetL.transpose()<<endl;
 
 
@@ -406,18 +422,28 @@ void zmpPlanner::emptyPlan()
     while (footLbuffer.size() > 0)
         footLbuffer.pop_front();
 
-    planned.targetZMP = SUPPORT_LEG_NONE;
-    planned.targetSupport = SUPPORT_LEG_NONE;
     planAvailable = false;
-    planned.step_id = -1;
-
     start.setZero();
     target.setZero();
+
     startL.setZero();
     targetL.setZero();
+    
     startR.setZero();
     targetR.setZero();
+    
     footR.setZero();
     footL.setZero();
+    
+    footR_.setZero();
+    footL_.setZero();
+    
     ZMPref.setZero();
+
+    v.setZero();
+    omega.setZero();
+    
+    planned.targetZMP = SUPPORT_LEG_NONE;
+    planned.targetSupport = SUPPORT_LEG_NONE;
+    planned.step_id = -1;
 }
