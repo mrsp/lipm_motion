@@ -91,16 +91,14 @@ void lipm_ros::desiredFootstepsCb(const lipm_msgs::MotionPlanGoalConstPtr &goal)
     lfoot(4) = lq.x();
     lfoot(5) = lq.y();
     lfoot(6) = lq.z();
-        cout<<" lfoot  "<<lfoot.transpose()<<endl;
-        cout<<" lq  "<< lq.w()<<" "<<lq.x()<<" "<<lq.y()<<" "<<lq.z()<<endl;
+
 
     rfoot.head(3) = rpos;
     rfoot(3) = rq.w();
     rfoot(4) = rq.x();
     rfoot(5) = rq.y();
     rfoot(6) = rq.z();
-        cout<<" rfoot  "<<rfoot.transpose()<<endl;
-        cout<<" rq  "<< rq.w()<<" "<<rq.x()<<" "<<rq.y()<<" "<<rq.z()<<endl;
+
 
 
     unsigned int j = 0;
@@ -122,7 +120,6 @@ void lipm_ros::desiredFootstepsCb(const lipm_msgs::MotionPlanGoalConstPtr &goal)
         i.target(4) = q.x();
         i.target(5) = q.y();
         i.target(6) = q.z();
-        cout<<" Ith command "<<i.target.transpose()<<endl;
         if (goal->footsteps[j].leg == 0) //Swing LLeg
         {
             i.targetSupport = SUPPORT_LEG_RIGHT;

@@ -145,8 +145,8 @@ void zmpPlanner::plan(Vector3d actual_COP, VectorXd actual_footL, VectorXd actua
 
 
             // cout<<"Target R before Crop "<<targetR.transpose()<<endl;
-            // targetR(0) = cropStep(targetR(0), Upper(0), Lower(0));
-            // targetR(1) = cropStep(targetR(1), Upper(1), Lower(1));
+            targetR(0) = cropStep(targetR(0), Upper(0), Lower(0));
+            targetR(1) = cropStep(targetR(1), Upper(1), Lower(1));
             // cout<<"Target R after Crop "<<targetR.transpose()<<endl;
 
 
@@ -249,8 +249,8 @@ void zmpPlanner::plan(Vector3d actual_COP, VectorXd actual_footL, VectorXd actua
 
 
             // cout<<"Target L before Crop "<<targetL.transpose()<<endl;
-            // targetL(0) = cropStep(targetL(0), Upper(0), Lower(0));
-            // targetL(1) = cropStep(targetL(1), Upper(1), Lower(1));
+            targetL(0) = cropStep(targetL(0), Upper(0), Lower(0));
+            targetL(1) = cropStep(targetL(1), Upper(1), Lower(1));
             // cout<<"Target L after Crop "<<targetL.transpose()<<endl;
 
 
