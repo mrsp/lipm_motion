@@ -338,12 +338,12 @@ void zmpPlanner::plan(Vector3d actual_COP, VectorXd actual_footL, VectorXd actua
             unsigned int p = 0;
             //target = computeDesiredZMP(startL,startR,i);
             target = 0.5*(startR.head(3) + startqR.toRotationMatrix()*Vector3d(HX, HY, HZ) +  startL.head(3) + startqL.toRotationMatrix()*Vector3d(HX, -HY, HZ));
-            while (p < 2.0*DS_Instructions)
+            while (p < DS_Instructions)
             {
                 /** ZMP Trajectory Generation **/
-                ZMPref(0) = interp.planFeetTrajectoryXY((float)p, target(0), start(0),  2.0*DS_Instructions - 1.0);
-                ZMPref(1) = interp.planFeetTrajectoryXY((float)p, target(1), start(1),  2.0*DS_Instructions - 1.0);
-                ZMPref(2) = interp.LinearInterpolation((float)p, target(2), start(2),  2.0*DS_Instructions - 1.0);
+                ZMPref(0) = interp.planFeetTrajectoryXY((float)p, target(0), start(0),  DS_Instructions - 1.0);
+                ZMPref(1) = interp.planFeetTrajectoryXY((float)p, target(1), start(1),  DS_Instructions - 1.0);
+                ZMPref(2) = interp.LinearInterpolation((float)p, target(2), start(2),  DS_Instructions - 1.0);
                 /** ZMP Point pushed to ZMP buffer **/
                 ZMPbuffer.push_back(ZMPref);
                 footRbuffer.push_back(footR);
@@ -351,7 +351,7 @@ void zmpPlanner::plan(Vector3d actual_COP, VectorXd actual_footL, VectorXd actua
                 p++;
             }
             p = 0;
-            while (p < 2.0*i.steps)
+            while (p < i.steps)
             {
                 /** ZMP Point pushed to ZMP buffer **/
                 ZMPbuffer.push_back(target);
