@@ -1,0 +1,17 @@
+    hc: 0.108922137
+    gravity: 9.80665
+    dt: 0.01
+    MaxStepX: 0.03
+    MinStepX: -0.03
+    MaxStepY: 0.11
+    MinStepY: 0.08
+    MaxStepZ: 0.02
+    Tss: 3.0
+    Tds: 4.0
+    HX: 0.000
+    HY: 0.000
+    HZ: 0.000
+    Q: 1.0
+    R: 1.0e-6
+    Np: 152
+    debug: True

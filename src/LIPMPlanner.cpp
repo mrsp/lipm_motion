@@ -192,7 +192,7 @@ void LIPMPlanner::plan(boost::circular_buffer<VectorXd> & ZMPRef)
 
     CoM_d(0) = comx_d;
     CoM_d(1) = comy_d;
-    CoM_d(2) = comZ;
+    CoM_d(2) = comZ + ZMPRef.front()(2);
     
     CoM_d(3) = comdx_d;
     CoM_d(4) = comdy_d;
