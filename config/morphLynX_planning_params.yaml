@@ -6,12 +6,12 @@
     MaxStepY: 0.11
     MinStepY: 0.08
     MaxStepZ: 0.02
-    Tss: 3.0
-    Tds: 4.0
+    Tss: 0.1
+    Tds: 0.2
     HX: 0.000
     HY: 0.000
     HZ: 0.000
-    Q: 1.0
-    R: 1.0e-6
+    Q: 1
+    R: 1.0e-7
     Np: 152
     debug: True
