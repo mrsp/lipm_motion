@@ -5,10 +5,10 @@
     MinStepX: -0.5
     MaxStepY: 0.5
     MinStepY: 0.22
-    MaxStepZ: 0.1
-    Tss: 1.5
-    Tds: 0.5
-    HX: 0.03
+    MaxStepZ: 0.08
+    Tss: 2.0
+    Tds: 1.0
+    HX: 0.05
     HY: 0.00
     HZ: 0.0
     Q: 0.06
