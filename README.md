@@ -11,18 +11,18 @@ These instructions will get you a copy of the project up and running on your loc
 * Eigen 3.2.0 and later
 
 ## Installing
-* git clone https://github.com/mrsp/lipm_msgs.git
-* git clone https://github.com/mrsp/lipm_motion.git
-* catkin_make -DCMAKE_BUILD_TYPE=Release 
-* If you are using catkin tools run: catkin build  --cmake-args -DCMAKE_BUILD_TYPE=Release 
+* `git clone https://github.com/mrsp/lipm_msgs.git`
+* `git clone https://github.com/mrsp/lipm_motion.git`
+* `catkin_make -DCMAKE_BUILD_TYPE=Release` 
+* If you are using catkin tools run: `catkin build  --cmake-args -DCMAKE_BUILD_TYPE=Release` 
 
 ## ROS Examples
 ### Launch on your Robot 
-* Specify topics on config/planning_params.yaml
-* roslaunch lipm_motion lipm_motion.launch
+* Specify topics on `config/planning_params.yaml`
+* `roslaunch lipm_motion lipm_motion.launch`
 
 ### Example Motion Plan for the Atlas humanoid robot
-* roslaunch lipm_motion lipm_motion_atlas.launch
+* `roslaunch lipm_motion lipm_motion_atlas.launch`
 <p align="center">
 <img src="img/MotionPlan.png" /img>
 </p>
